@@ -96,7 +96,7 @@ class ServerService {
 
   /**
    * 清理超时的处理中任务
-   * 将超过 10 分钟未更新状态的 processing 任务标记为 failed
+   * 将超过 2 分钟未更新状态的 processing 任务标记为 timeout
    */
   private cleanupTimeoutTasks(): void {
     try {
@@ -109,7 +109,7 @@ class ServerService {
             remark = '任务超时', 
             updated_at = CURRENT_TIMESTAMP 
         WHERE status = 'processing' 
-        AND updated_at < datetime('now', '-10 minutes')
+        AND updated_at < datetime('now', '-2 minutes')
       `
         )
         .run()
@@ -173,24 +173,9 @@ class ServerService {
           // 仅显示系统通知，不操作数据库记录
           new Notification({
             title: 'OzonAssist 任务异常',
-            body: '自动化脚本执行遇到障碍，请检查浏览器插件状态。',
+            body: '浏览器插件上报了一个错误。这可能是由于 Ozon 页面结构变更或网络闪断引起的。',
             silent: false
           }).show()
-
-          // 同时弹出一个强交互的系统对话框（确保用户在全屏或通知静音时也能看到）
-          const focusedWindow = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0]
-          if (focusedWindow) {
-            dialog.showMessageBox(focusedWindow, {
-              type: 'warning',
-              title: '任务异常警报',
-              message: 'Ozon 自动化脚本执行遇到障碍',
-              detail:
-                '浏览器插件上报了一个错误。这可能是由于 Ozon 页面结构变更或网络闪断引起的，请立即切换到浏览器检查。',
-              buttons: ['知道了'],
-              defaultId: 0
-            })
-          }
-
           res.json({ success: true, message: 'Notification and Dialog shown' })
         } catch (error) {
           logger.error('[API] Error (task failed):', error)
@@ -198,13 +183,28 @@ class ServerService {
         }
       })
 
-      // 随机获取一张可用的图片
+      // 随机获取一张可用的图片（优化算法，避免全表扫描）
       app.get('/api/image/random', (_req, res) => {
         try {
           logger.info('[API] Request: Get random image')
           const db = databaseService.getDatabase()
-          // 随机获取一张图片记录
-          const image = db.prepare('SELECT * FROM images ORDER BY RANDOM() LIMIT 1').get() as any
+
+          // 使用高效的随机算法：先获取总数和 ID 范围，然后随机选择
+          const meta = db
+            .prepare('SELECT COUNT(*) as total, MIN(id) as minId, MAX(id) as maxId FROM images')
+            .get() as any
+
+          if (!meta || meta.total === 0) {
+            logger.warn('[API] No images available in database')
+            res.json({ success: false, message: 'No images available' })
+            return
+          }
+
+          // 在 ID 范围内随机选择，如果未命中则递归向后查找
+          const randomId = Math.floor(Math.random() * (meta.maxId - meta.minId + 1)) + meta.minId
+          const image = db
+            .prepare('SELECT * FROM images WHERE id >= ? LIMIT 1')
+            .get(randomId) as any
 
           if (image) {
             const baseUrl = `http://127.0.0.1:${this.activePort}`
@@ -233,7 +233,7 @@ class ServerService {
         }
       })
 
-      // 获取一条未处理的投诉
+      // 获取一条未处理的投诉（原子化操作，防止并发重复读取）
       app.get('/api/complaint/unprocessed', (_req, res) => {
         try {
           logger.info('[API] Request: Get unprocessed complaint')
@@ -242,26 +242,61 @@ class ServerService {
           this.cleanupTimeoutTasks()
 
           const db = databaseService.getDatabase()
-          // 找一条处于 pending 状态的投诉，并关联获取图片路径（如果有）
-          const complaint = db
-            .prepare(
-              `
-            SELECT c.*, i.file_path as image_path 
-            FROM complaints c 
-            LEFT JOIN images i ON c.image_id = i.id 
-            WHERE c.status = 'pending' 
-            ORDER BY c.created_at ASC 
-            LIMIT 1
-          `
-            )
-            .get()
+
+          // 使用事务确保原子性：查询 + 更新必须是原子操作
+          const transaction = db.transaction(() => {
+            // 1. 找到第一条 pending 状态的记录并锁定（使用 LIMIT 1）
+            const pending = db
+              .prepare(
+                `
+              SELECT id 
+              FROM complaints 
+              WHERE status = 'pending' 
+              ORDER BY created_at ASC 
+              LIMIT 1
+            `
+              )
+              .get() as { id: number } | undefined
+
+            if (!pending) return null
+
+            // 2. 立即更新状态为 processing（原子操作，防止其他请求读到同一条）
+            const updateResult = db
+              .prepare(
+                `
+              UPDATE complaints 
+              SET status = 'processing', 
+                  started_at = CURRENT_TIMESTAMP, 
+                  updated_at = CURRENT_TIMESTAMP 
+              WHERE id = ? AND status = 'pending'
+            `
+              )
+              .run(pending.id)
+
+            // 3. 二次确认更新成功（防止状态被其他并发请求改变）
+            if (updateResult.changes === 0) {
+              logger.warn(`[API] Race condition detected: SKU already taken by another request`)
+              return null
+            }
+
+            // 4. 获取完整数据（此时状态已是 processing，不会被其他请求读到）
+            const complaint = db
+              .prepare(
+                `
+              SELECT c.*, i.file_path as image_path 
+              FROM complaints c 
+              LEFT JOIN images i ON c.image_id = i.id 
+              WHERE c.id = ?
+            `
+              )
+              .get(pending.id)
+
+            return complaint
+          })
+
+          const complaint = transaction()
 
           if (complaint) {
-            // 将投诉状态更新为 processing，并记录开始时间
-            db.prepare(
-              "UPDATE complaints SET status = 'processing', started_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?"
-            ).run(complaint.id)
-
             // 如果有图片，构造完整的访问 URL
             if (complaint.image_path) {
               const baseUrl = `http://127.0.0.1:${this.activePort}`
@@ -324,17 +359,26 @@ class ServerService {
         }
       })
 
-      // 更新投诉关联的图片 ID
+      // 更新投诉关联的图片 ID（带有效性验证）
       app.post('/api/complaint/:sku/image', express.json(), (req, res) => {
         try {
           const { sku } = req.params
           const { imageId } = req.body
           logger.info(`[API] Request: Link image - SKU=${sku}, ImageID=${imageId}`)
 
-          // 将 SKU 视为字符串进行匹配，因为 DB 中 sku 是 TEXT 类型
           const skuStr = String(sku)
           const numericImageId = imageId ? Number(imageId) : null
           const db = databaseService.getDatabase()
+
+          // 验证图片 ID 是否存在（如果提供了 imageId）
+          if (numericImageId !== null) {
+            const imageExists = db.prepare('SELECT 1 FROM images WHERE id = ?').get(numericImageId)
+            if (!imageExists) {
+              logger.warn(`[API] Link image FAILED: ImageID ${numericImageId} does not exist`)
+              res.json({ success: false, message: 'Image not found' })
+              return
+            }
+          }
 
           const result = db
             .prepare(

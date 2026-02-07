@@ -169,8 +169,14 @@ class DatabaseService {
       -- 确保 MD5 唯一索引存在
       CREATE UNIQUE INDEX IF NOT EXISTS idx_images_md5 ON images(file_md5);
 
-      -- 创建索引以加速统计和查询（解决 COUNT(*) 慢查询问题）
+      -- 创建索引以加速统计和查询
       CREATE INDEX IF NOT EXISTS idx_complaints_status ON complaints(status);
+      
+      -- 复合索引：优化任务拉取查询 (status + created_at)
+      CREATE INDEX IF NOT EXISTS idx_complaints_status_created ON complaints(status, created_at);
+      
+      -- 复合索引：优化超时清理查询 (status + updated_at)
+      CREATE INDEX IF NOT EXISTS idx_complaints_status_updated ON complaints(status, updated_at);
     `)
 
     // 检查并自动升级数据库架构 (为旧表增加 MD5 列)

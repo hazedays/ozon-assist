@@ -56,8 +56,9 @@ const toast = useToast()
 
 // 提取并过滤 SKU 工具函数 (移动到上方以供 computed/watch 使用)
 const getCleanedSkus = (text: string) => {
+  // 支持所有类型的换行符：\r\n (Windows), \n (Unix/Mac), \r (旧Mac)
   return text
-    .split('\n')
+    .split(/\r?\n|\r/)
     .map((s) => s.trim())
     .map((s) => {
       const match = s.match(/\/product\/(\d+)/)
@@ -72,8 +73,16 @@ const skuCount = computed(() => {
   return getCleanedSkus(skuText.value).length
 })
 
+// 标记是否正在处理文件导入，避免 watch 重复触发
+const isFileImporting = ref(false)
+
 // 自动清洗逻辑：当监听到内容变化时（如粘贴），自动过滤有效 SKU
 watch(skuText, (newVal) => {
+  // 文件导入时跳过自动清洗（已在 handleFileChange 中完成）
+  if (isFileImporting.value) {
+    return
+  }
+
   // 如果包含链接或非法字符，则执行清洗
   if (newVal.includes('http') || /[^\d\n\s]/.test(newVal)) {
     const cleaned = getCleanedSkus(newVal).join('\n')
@@ -95,11 +104,25 @@ const handleFileChange = (e: Event) => {
   const reader = new FileReader()
   reader.onload = (event) => {
     const content = event.target?.result as string
+    // 标记正在导入文件，防止 watch 二次触发清洗
+    isFileImporting.value = true
+
     // 导入文件瞬间立即执行清洗
     const skus = getCleanedSkus(content)
     skuText.value = skus.join('\n')
+
+    // 延迟重置标记，确保 watch 完成
+    setTimeout(() => {
+      isFileImporting.value = false
+    }, 100)
   }
-  reader.readAsText(file)
+  reader.onerror = () => {
+    toast.error('文件读取失败，请检查文件编码是否为 UTF-8')
+    isFileImporting.value = false
+  }
+
+  // 明确指定使用 UTF-8 编码读取
+  reader.readAsText(file, 'UTF-8')
   target.value = ''
 }
 

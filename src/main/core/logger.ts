@@ -1,61 +1,51 @@
 import { app, ipcMain } from 'electron'
 import { join } from 'path'
-import fs from 'fs-extra'
+import { Logger } from '@chaeco/logger'
 
 const isDev = !app.isPackaged
 
 /**
- * 实际的日志库实例（延迟初始化）
+ * 主 Logger 实例
+ * @chaeco/logger 支持懒加载，首次写入时自动创建目录和文件
  */
-let _loggerInstance: any = null
-let _initializationAttempted = false
+let appLogger: Logger
 
 /**
- * 安全的日志封装对象
- * 在 app 未就绪时使用 console，就绪后自动升级到文件日志
+ * 获取或创建 Logger 实例
+ * 在 app.ready 前返回 console fallback，ready 后返回真实 Logger
  */
-const safeLog = (level: 'info' | 'warn' | 'error' | 'debug', ...args: any[]) => {
-  // 如果还没尝试过初始化，且 app 已就绪，则尝试初始化
-  if (!_initializationAttempted && app.isReady()) {
-    initializeLogger()
+function getLogger(): Logger {
+  // 如果已经创建，直接返回
+  if (appLogger) {
+    return appLogger
   }
 
-  // 使用真实日志库（如果可用），否则降级到 console
-  if (_loggerInstance && typeof _loggerInstance[level] === 'function') {
-    try {
-      _loggerInstance[level](...args)
-    } catch (e) {
-      console[level]?.(...args)
-    }
-  } else {
-    console[level]?.(...args)
+  // 如果 app 未就绪，暂时返回 console-only logger
+  if (!app.isReady()) {
+    return new Logger({
+      level: isDev ? 'debug' : 'info',
+      name: 'OZON',
+      console: {
+        enabled: true,
+        colors: isDev,
+        timestamp: true
+      },
+      file: {
+        enabled: false // app 未就绪时禁用文件日志
+      }
+    })
   }
-}
 
-/**
- * 初始化日志库（仅在 app.ready 后调用）
- */
-function initializeLogger(): void {
-  if (_initializationAttempted) return
-  _initializationAttempted = true
-
+  // app 已就绪，创建完整的 Logger
   try {
     const logDir = join(app.getPath('userData'), 'logs')
 
-    // 确保目录存在
-    if (!fs.existsSync(logDir)) {
-      fs.mkdirpSync(logDir)
-    }
-
-    // 动态加载以避免顶层副作用
-    const { Logger } = require('@chaeco/logger')
-
-    _loggerInstance = new Logger({
+    appLogger = new Logger({
       level: isDev ? 'debug' : 'info',
       name: 'OZON',
       file: {
         enabled: true,
-        path: logDir,
+        path: logDir, // 首次写入时自动创建目录
         maxSize: '10m',
         maxFiles: 30,
         maxAge: 30,
@@ -68,10 +58,23 @@ function initializeLogger(): void {
       }
     })
 
-    console.info('[Logger] Initialized successfully with file logging enabled.')
+    return appLogger
   } catch (e) {
     console.error('[Logger] Failed to initialize, falling back to console only:', e)
-    _loggerInstance = null
+
+    // 失败时返回 console-only logger
+    return new Logger({
+      level: isDev ? 'debug' : 'info',
+      name: 'OZON',
+      console: {
+        enabled: true,
+        colors: isDev,
+        timestamp: true
+      },
+      file: {
+        enabled: false
+      }
+    })
   }
 }
 
@@ -79,22 +82,19 @@ function initializeLogger(): void {
  * 导出的日志对象
  */
 export const logger = {
-  info: (...args: any[]) => safeLog('info', ...args),
-  warn: (...args: any[]) => safeLog('warn', ...args),
-  error: (...args: any[]) => safeLog('error', ...args),
-  debug: (...args: any[]) => safeLog('debug', ...args),
-  child: (name: string) => {
-    if (_loggerInstance && typeof _loggerInstance.child === 'function') {
-      return _loggerInstance.child(name)
-    }
-    // 返回一个假的 child logger，实际还是打印到主 logger
-    return logger
-  }
+  info: (...args: any[]) => getLogger().info(...args),
+  warn: (...args: any[]) => getLogger().warn(...args),
+  error: (...args: any[]) => getLogger().error(...args),
+  debug: (...args: any[]) => getLogger().debug(...args),
+  child: (name: string) => getLogger().child(name)
 }
 
+/**
+ * 初始化渲染进程日志转发
+ */
 export function initRendererLogging(): void {
   ipcMain.on('logger:log', (_event, { level, args }) => {
-    const rendererLogger = logger.child('renderer')
+    const rendererLogger = getLogger().child('renderer')
     if (typeof rendererLogger[level] === 'function') {
       rendererLogger[level](...args)
     }

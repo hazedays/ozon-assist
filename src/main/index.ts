@@ -22,6 +22,7 @@ import { logger, initRendererLogging } from './core/logger'
 import { databaseService, serverService } from './services'
 import { databaseRendererService } from './services/renderer/database'
 import { serverRendererService } from './services/renderer/server'
+import { APP_CONSTANTS } from '@shared/constants'
 
 /** 主窗口实例 */
 let mainWindow: BrowserWindow | null = null
@@ -130,7 +131,7 @@ app.whenReady().then(() => {
   serverRendererService.initRendererServer()
   // 启动本地服务器
   serverService
-    .start('8972')
+    .start(APP_CONSTANTS.DEFAULT_SERVER_PORT.toString())
     .then(() => {
       logger.info('Server started successfully')
     })
