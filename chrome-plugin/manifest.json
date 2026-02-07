@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "OzonAssist Extension",
+  "version": "2.0.0",
+  "description": "智能化 Ozon 投诉提交套件，支持批量注入与实时同步",
+  "author": "OzonAssist",
+  "permissions": ["activeTab", "contextMenus", "scripting"],
+  "host_permissions": ["https://*.ozon.ru/*", "http://127.0.0.1:8972/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://ozon.ru/*", "https://www.ozon.ru/*", "https://*.ozon.ru/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

@@ -1,0 +1,43 @@
+@import 'tailwindcss';
+@import 'remixicon/fonts/remixicon.css';
+
+/* Tailwind CSS 4 深色模式配置 - 基于 .dark 类选择器 */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@reference "tailwindcss";
+
+@theme {
+  --color-ozon: #005bff;
+}
+
+body {
+  min-height: 100vh;
+  color: var(--color-text);
+  background: var(--color-background);
+  line-height: 1.6;
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    Oxygen,
+    Ubuntu,
+    Cantarell,
+    'Fira Sans',
+    'Droid Sans',
+    'Helvetica Neue',
+    sans-serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+}
+
+* {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

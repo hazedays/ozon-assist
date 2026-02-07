@@ -1,0 +1,139 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+      - name: Remove .npmrc for CI
+        run: rm -f .npmrc
+        shell: bash
+      - name: Install Dependencies
+        run: npm install
+        env:
+          HSUKY: 0
+      - run: npm run lint
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    needs: lint
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+
+      - name: Remove .npmrc for CI
+        run: rm -f .npmrc
+        shell: bash
+
+      - name: Install Linux Dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libarchive-tools libsecret-1-dev build-essential
+
+      - name: Install Dependencies
+        run: npm install
+        env:
+          HSUKY: 0
+
+      - name: Build and Package
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # 禁用 macOS 代码签名检查（如果没有证书）
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+        run: |
+          if [ "${{ matrix.os }}" = "macos-latest" ]; then
+            # 同时打包 Intel (x64) 和 Apple Silicon (arm64)
+            npm run build:mac -- --x64 --arm64
+          elif [ "${{ matrix.os }}" = "windows-latest" ]; then
+            npm run build:win
+          else
+            npm run build:linux
+          fi
+        shell: bash
+
+      - name: Upload App Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: OzonAssist-${{ matrix.os }}
+          path: |
+            dist/*.exe
+            dist/*.dmg
+            dist/*.zip
+            dist/*.AppImage
+            dist/*.deb
+            dist/*.blockmap
+          if-no-files-found: error
+
+  # 额外环节：打包网站和插件作为独立存档
+  package-assets:
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Zip Website
+        run: zip -r website.zip website/
+
+      - name: Zip Chrome Plugin
+        run: zip -r chrome-plugin.zip chrome-plugin/
+
+      - name: Upload Assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: OzonAssist-Web-and-Plugin
+          path: |
+            website.zip
+            chrome-plugin.zip
+
+  publish-release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [release, package-assets]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+
+      - name: Flatten folder structure
+        run: |
+          mkdir final-assets
+          find release-artifacts -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.AppImage" -o -name "*.deb" -o -name "*.zip" \) -exec cp {} final-assets/ \;
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: final-assets/*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

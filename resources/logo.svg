@@ -1,0 +1,16 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- 整个画布填充 Ozon 蓝色 -->
+  <rect width="512" height="512" fill="#005BFF"/>
+  
+  <!-- 灯泡发光圈 -->
+  <circle cx="256" cy="216" r="110" fill="white" fill-opacity="0.1"/>
+  
+  <!-- 灯泡外轮廓 -->
+  <path d="M256 90C185 90 130 145 130 216C130 265 165 305 210 335V390H302V335C347 305 382 265 382 216C382 145 327 90 256 90Z" fill="none" stroke="white" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- 内部闪电 -->
+  <path d="M256 140L200 255H250L220 350L312 215H262L312 140H256Z" fill="white"/>
+  
+  <!-- 灯座装饰线 -->
+  <rect x="225" y="405" width="62" height="12" rx="6" fill="white"/>
+</svg>

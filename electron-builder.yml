@@ -1,0 +1,55 @@
+appId: com.ozon_assist.app
+productName: OzonAssist
+copyright: Copyright © 2026 Hazedays
+directories:
+  buildResources: build
+files:
+  - '!**/.vscode/*'
+  - '!src/*'
+  - '!electron.vite.config.{js,ts,mjs,cjs}'
+  - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
+  - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
+  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+  - '!logs/*'
+asarUnpack:
+  - resources/**
+  - chrome-plugin/**
+win:
+  icon: build/icon.ico
+  executableName: ozon-assist
+  target:
+    - nsis
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  artifactName: ${productName}-${version}-setup.${ext}
+  shortcutName: ${productName}
+  uninstallDisplayName: ${productName}
+  createDesktopShortcut: always
+mac:
+  identity: null
+  icon: build/icon.icns
+  entitlementsInherit: build/entitlements.mac.plist
+  extendInfo:
+    - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
+    - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
+  target:
+    - default
+  notarize: false
+dmg:
+  icon: build/icon.icns
+  artifactName: ${productName}-${version}-${arch}.${ext}
+linux:
+  icon: build/icon.png
+  target:
+    - AppImage
+    - deb
+  maintainer: hazedays.com
+  category: Utility
+appImage:
+  artifactName: ${productName}-${version}-${arch}.${ext}
+npmRebuild: true
+asar: true
+publish:
+  provider: generic
+  url: https://example.com/auto-updates
