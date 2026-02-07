@@ -1,0 +1,863 @@
+<!doctype html>
+<html lang="zh-CN" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OzonAssist - Ozon 卖家自动化维权终极武器</title>
+    <link rel="icon" href="./assets/images/favicon.png" type="image/png" />
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <link
+      href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css"
+      rel="stylesheet"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --primary: #005bff;
+        --primary-glow: rgba(0, 91, 255, 0.4);
+      }
+      body {
+        font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+        overflow-x: hidden;
+      }
+      .mesh-bg {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+        background-color: #f8fafc;
+        background-image:
+          radial-gradient(at 0% 0%, rgba(0, 91, 255, 0.1) 0px, transparent 50%),
+          radial-gradient(at 100% 0%, rgba(249, 17, 85, 0.1) 0px, transparent 50%);
+        transform: translateZ(0);
+        will-change: transform;
+      }
+      .glass-card {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        transform: translateZ(0);
+      }
+      .reveal {
+        opacity: 0;
+        transform: translateY(20px);
+        transition:
+          opacity 0.6s ease-out,
+          transform 0.6s ease-out;
+        will-change: opacity, transform;
+      }
+      .reveal.active {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      @keyframes float {
+        0% {
+          transform: translateY(0px);
+        }
+        50% {
+          transform: translateY(-10px);
+        }
+        100% {
+          transform: translateY(0px);
+        }
+      }
+      .float-animation {
+        animation: float 6s ease-in-out infinite;
+        will-change: transform;
+      }
+      .btn-glow:hover {
+        box-shadow: 0 0 20px var(--primary-glow);
+      }
+      /* 添加ozon颜色类定义 */
+      .text-ozon {
+        color: #005bff;
+      }
+      .bg-ozon {
+        background-color: #005bff;
+      }
+      .border-ozon {
+        border-color: #005bff;
+      }
+      .nav-scrolled {
+        background: rgba(255, 255, 255, 0.9) !important;
+        padding-top: 0.75rem !important;
+        padding-bottom: 0.75rem !important;
+        box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1);
+      }
+      @keyframes scroll {
+        0% {
+          transform: translateX(0);
+        }
+        100% {
+          transform: translateX(-50%);
+        }
+      }
+      .animate-scroll {
+        display: flex;
+        width: max-content;
+        animation: scroll 40s linear infinite;
+      }
+      .animate-scroll:hover {
+        animation-play-state: paused;
+      }
+      .testimonial-card {
+        background: rgba(30, 41, 59, 0.7);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        width: 420px;
+        flex-shrink: 0;
+        padding: 2.5rem;
+        border-radius: 2rem;
+        transition: all 0.3s ease;
+      }
+      .testimonial-card:hover {
+        border-color: var(--primary);
+        background: rgba(30, 41, 59, 0.9);
+        transform: translateY(-5px);
+      }
+    </style>
+  </head>
+  <body
+    class="bg-slate-50 text-slate-900 selection:bg-green-100 selection:text-green-900 antialiased"
+  >
+    <div class="mesh-bg"></div>
+
+    <!-- 导航栏 -->
+    <nav
+      id="navbar"
+      class="fixed top-0 w-full z-50 transition-[padding,background-color] duration-500 px-6 py-4"
+    >
+      <div
+        class="max-w-7xl mx-auto flex items-center justify-between glass-card px-6 py-3 rounded-2xl"
+      >
+        <div class="flex items-center gap-3 group cursor-pointer">
+          <div
+            class="w-10 h-10 bg-ozon rounded-xl flex items-center justify-center shadow-lg shadow-blue-200 group-hover:rotate-12 transition-transform"
+          >
+            <img src="./assets/images/logo.png" alt="Logo" class="w-7 h-7 rounded-sm" />
+          </div>
+          <div class="flex flex-col">
+            <span class="text-lg font-extrabold tracking-tight leading-none text-slate-900"
+              >OzonAssist</span
+            >
+            <span
+              class="text-[10px] font-bold text-ozon uppercase tracking-widest leading-none mt-1"
+              >Professional</span
+            >
+          </div>
+        </div>
+
+        <div class="hidden md:flex items-center gap-10">
+          <div class="flex items-center gap-8 text-sm font-semibold text-slate-500">
+            <a href="#features" class="hover:text-ozon transition-colors">核心功能</a>
+            <a href="#workflow" class="hover:text-ozon transition-colors">操作流程</a>
+            <a href="#faq" class="hover:text-ozon transition-colors">常见问题</a>
+            <a
+              href="https://github.com/hazedays/ozon-assist"
+              target="_blank"
+              class="hover:text-ozon transition-colors flex items-center gap-1.5"
+            >
+              <i class="ri-github-fill text-lg"></i>
+              GitHub 开源
+            </a>
+          </div>
+          <a
+            href="#download"
+            class="bg-slate-900 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 text-sm btn-glow"
+          >
+            立即下载
+          </a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <main class="relative pt-40 pb-32 px-6 overflow-hidden">
+      <div class="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
+        <div class="reveal">
+          <div
+            class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900 text-slate-200 text-xs font-bold mb-8"
+          >
+            <span class="flex h-2 w-2 rounded-full bg-ozon animate-pulse"></span>
+            代码已开源 | 100% 透明安全
+          </div>
+          <h1
+            class="text-6xl lg:text-8xl font-black text-slate-900 mb-8 tracking-tighter leading-[0.9]"
+          >
+            全自动<br /><span class="text-ozon font-serif">Ozon 维权.</span>
+          </h1>
+          <p class="text-xl text-slate-500 max-w-lg mb-12 leading-relaxed font-medium">
+            专为 Ozon 跨境卖家深度定制。基于
+            <b>Electron + SQLite</b> 的本地化架构，代码完全开源透明。集成批量 SKU
+            导入与自动化插件，申诉效率提升 1000%。
+          </p>
+          <div class="flex flex-col sm:flex-row items-center gap-4">
+            <a
+              href="#download"
+              class="w-full sm:w-auto flex items-center justify-center gap-4 bg-ozon text-white px-8 py-5 rounded-2xl font-black hover:opacity-90 transition-all shadow-2xl shadow-blue-200 group text-lg btn-glow"
+            >
+              <i class="ri-download-cloud-2-line text-2xl"></i>
+              立即免费下载
+            </a>
+            <a
+              href="https://github.com/hazedays/ozon-assist"
+              target="_blank"
+              class="w-full sm:w-auto flex items-center justify-center gap-3 bg-white text-slate-700 border border-slate-200 px-8 py-5 rounded-2xl font-bold hover:bg-slate-50 transition-all"
+            >
+              <i class="ri-github-line text-2xl"></i>
+              GitHub 源码
+            </a>
+          </div>
+
+          <!-- 信任标识 -->
+          <div
+            class="mt-16 flex items-center gap-10 opacity-30 grayscale hover:grayscale-0 transition-all duration-700 overflow-hidden whitespace-nowrap"
+          >
+            <div class="flex items-center gap-2 font-bold text-xs tracking-widest uppercase">
+              <i class="ri-code-s-slash-line text-xl"></i>
+              Open Source Transparent
+            </div>
+            <div class="flex items-center gap-2 font-bold text-xs tracking-widest uppercase">
+              <i class="ri-shield-check-line text-xl"></i>
+              AES-256 Local Encrypted
+            </div>
+            <div class="flex items-center gap-2 font-bold text-xs tracking-widest uppercase">
+              <i class="ri-database-line text-xl"></i>
+              SQLite DB Driver
+            </div>
+            <div class="flex items-center gap-2 font-bold text-xs tracking-widest uppercase">
+              <i class="ri-chrome-line text-xl"></i>
+              MV3 Extension
+            </div>
+            <div
+              class="flex items-center gap-2 font-bold text-xs tracking-widest uppercase border-l border-slate-300 pl-10"
+            >
+              <i class="ri-macbook-line text-xl"></i>
+              Native Apple Silicon
+            </div>
+          </div>
+        </div>
+
+        <div class="relative reveal delay-300">
+          <div
+            class="absolute -top-20 -right-20 w-96 h-96 bg-blue-200 rounded-full blur-[100px] opacity-30"
+          ></div>
+          <div
+            class="absolute -bottom-20 -left-20 w-96 h-96 bg-pink-200 rounded-full blur-[100px] opacity-30"
+          ></div>
+
+          <div class="relative z-10 glass-card rounded-[40px] p-4 shadow-2xl float-animation">
+            <div
+              class="bg-slate-900 rounded-[32px] aspect-4/3 overflow-hidden relative p-8 text-white"
+            >
+              <div class="grid grid-cols-3 gap-4 mb-8">
+                <div class="h-24 bg-white/5 rounded-2xl border border-white/10 p-4">
+                  <div class="text-[10px] text-slate-500 font-bold mb-1 uppercase">当前任务</div>
+                  <div class="text-3xl font-black text-ozon">124</div>
+                </div>
+                <div class="h-24 bg-white/5 rounded-2xl border border-white/10 p-4">
+                  <div class="text-[10px] text-slate-500 font-bold mb-1 uppercase">累计申诉</div>
+                  <div class="text-3xl font-black text-slate-300">12k+</div>
+                </div>
+                <div
+                  class="h-24 bg-white/5 rounded-2xl border border-white/10 p-4 flex items-center justify-center"
+                >
+                  <i class="ri-checkbox-circle-fill text-3xl text-ozon"></i>
+                </div>
+              </div>
+              <div class="space-y-4">
+                <div
+                  class="h-12 bg-white/5 rounded-xl border border-white/10 flex items-center px-4 justify-between"
+                >
+                  <div class="w-32 h-2 bg-slate-700 rounded-full"></div>
+                  <div
+                    class="px-2 py-1 bg-blue-500/20 text-blue-400 text-[10px] font-bold rounded-lg uppercase"
+                  >
+                    Success
+                  </div>
+                </div>
+                <div
+                  class="h-12 bg-white/5 rounded-xl border border-white/10 flex items-center px-4 justify-between"
+                >
+                  <div class="w-48 h-2 bg-slate-700 rounded-full"></div>
+                  <div
+                    class="px-2 py-1 bg-yellow-500/20 text-yellow-400 text-[10px] font-bold rounded-lg uppercase"
+                  >
+                    Processing
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- 统计数据条 -->
+    <section class="reveal bg-slate-900 py-12">
+      <div class="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8">
+        <div class="text-center">
+          <div class="text-4xl font-black text-white mb-2">99.8%</div>
+          <div class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+            任务执行成功率
+          </div>
+        </div>
+        <div class="text-center border-l border-white/10">
+          <div class="text-4xl font-black text-white mb-2">1,200+</div>
+          <div class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+            活跃跨境卖家
+          </div>
+        </div>
+        <div class="text-center border-l border-white/10">
+          <div class="text-4xl font-black text-white mb-2">24/7</div>
+          <div class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+            全自动运行支持
+          </div>
+        </div>
+        <div class="text-center border-l border-white/10">
+          <div class="text-4xl font-black text-white mb-2">&lt; 30s</div>
+          <div class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+            平均单笔申诉速度
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 流程展示 -->
+    <section id="workflow" class="py-32 px-6">
+      <div class="max-w-7xl mx-auto flex flex-col items-center">
+        <div class="text-center mb-20 reveal">
+          <h2 class="text-5xl font-black tracking-tight mb-4">三个步骤, 开启自动化之旅</h2>
+          <p class="text-slate-500 font-medium">从繁琐的手动工作流中解脱，只需三步即可完成</p>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-12 relative w-full">
+          <!-- 装饰线 -->
+          <div class="hidden md:block absolute top-10 left-0 w-full h-px bg-slate-200 -z-10"></div>
+
+          <div class="reveal flex flex-col items-center text-center px-4">
+            <div
+              class="w-20 h-20 bg-white border border-slate-200 rounded-3xl flex items-center justify-center mb-8 shadow-sm group-hover:shadow-xl transition-all relative overflow-hidden"
+            >
+              <div
+                class="absolute inset-0 bg-blue-50 opacity-0 group-hover:opacity-100 transition-opacity"
+              ></div>
+              <i class="ri-file-upload-line text-3xl text-slate-900 relative z-10"></i>
+            </div>
+            <h4 class="text-xl font-bold mb-4">1. 导入 SKU</h4>
+            <p class="text-sm text-slate-500 leading-relaxed">
+              通过文本粘贴或 TXT 文件一键导入需要申诉的商品清单，系统自动解析 ID。
+            </p>
+          </div>
+
+          <div class="reveal delay-150 flex flex-col items-center text-center px-4">
+            <div
+              class="w-20 h-20 bg-white border border-slate-200 rounded-3xl flex items-center justify-center mb-8 shadow-sm relative overflow-hidden"
+            >
+              <i class="ri-image-add-line text-3xl text-slate-900"></i>
+            </div>
+            <h4 class="text-xl font-bold mb-4">2. 匹配证据图片</h4>
+            <p class="text-sm text-slate-500 leading-relaxed">
+              在本地图片库中上传授权凭证，应用将根据侵权类型自动关联最佳申诉材料。
+            </p>
+          </div>
+
+          <div class="reveal delay-300 flex flex-col items-center text-center px-4">
+            <div
+              class="w-20 h-20 bg-ozon rounded-3xl flex items-center justify-center mb-8 shadow-xl shadow-blue-200 relative overflow-hidden text-white"
+            >
+              <i class="ri-rocket-2-line text-3xl"></i>
+            </div>
+            <h4 class="text-xl font-bold mb-4">3. 插件自动填报</h4>
+            <p class="text-sm text-slate-500 leading-relaxed">
+              启动任务后，浏览器插件将自动接管 Ozon 后台页面，执行高频模拟提交。
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bento Grid Features -->
+    <section id="features" class="py-32 px-6 bg-white/50">
+      <div class="max-w-7xl mx-auto grid md:grid-cols-12 gap-6">
+        <div
+          class="md:col-span-12 reveal glass-card rounded-[40px] p-12 overflow-hidden flex flex-col md:flex-row items-center justify-between gap-12"
+        >
+          <div class="max-w-xl">
+            <div
+              class="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-8"
+            >
+              <i class="ri-article-line text-3xl"></i>
+            </div>
+            <h3 class="text-4xl font-black mb-6 tracking-tight">批量 SKU 任务系统</h3>
+            <p class="text-slate-500 text-lg font-medium leading-relaxed mb-6">
+              支持从 TXT 文件直接导入或手动粘贴 SKU
+              列表。应用内建智能识别引擎，可自动解析任务元数据，并实时展示任务处理进度与成功率统计。
+            </p>
+            <div class="flex flex-wrap gap-2">
+              <span
+                class="px-3 py-1 bg-slate-100 rounded-lg text-[10px] font-bold text-slate-500 uppercase"
+                >Multi-line Support</span
+              >
+              <span
+                class="px-3 py-1 bg-slate-100 rounded-lg text-[10px] font-bold text-slate-500 uppercase"
+                >TXT Parser</span
+              >
+              <span
+                class="px-3 py-1 bg-slate-100 rounded-lg text-[10px] font-bold text-slate-500 uppercase"
+                >Real-time Stats</span
+              >
+            </div>
+          </div>
+          <div
+            class="flex-1 w-full max-w-md bg-slate-50 rounded-3xl p-6 border border-slate-100 shadow-inner"
+          >
+            <div class="space-y-3">
+              <div
+                class="h-10 bg-white rounded-xl border border-slate-200 flex items-center px-4 justify-between animate-pulse"
+              >
+                <div class="w-24 h-2 bg-slate-100 rounded-full"></div>
+                <div class="w-12 h-2 bg-green-200 rounded-full"></div>
+              </div>
+              <div
+                class="h-10 bg-white rounded-xl border border-slate-200 flex items-center px-4 justify-between"
+                style="animation-delay: 0.1s"
+              >
+                <div class="w-32 h-2 bg-slate-100 rounded-full"></div>
+                <div class="w-12 h-2 bg-blue-200 rounded-full"></div>
+              </div>
+              <div
+                class="h-10 bg-white rounded-xl border border-slate-200 flex items-center px-4 justify-between"
+                style="animation-delay: 0.2s"
+              >
+                <div class="w-20 h-2 bg-slate-100 rounded-full"></div>
+                <div class="w-12 h-2 bg-green-200 rounded-full"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="md:col-span-7 reveal glass-card rounded-[40px] p-12 overflow-hidden relative group"
+        >
+          <div class="relative z-10 max-w-sm">
+            <div
+              class="w-16 h-16 bg-blue-50 text-ozon rounded-2xl flex items-center justify-center mb-8"
+            >
+              <i class="ri-database-2-line text-3xl"></i>
+            </div>
+            <h3 class="text-3xl font-black mb-4 tracking-tight">本地化证据库</h3>
+            <p class="text-slate-500 font-medium leading-relaxed">
+              基于本地 SQLite
+              驱动，零延迟管理成百上千张授权凭证图。支持拖拽式导入，应用会自动根据侵权 ID
+              匹配对应的凭证图片，解决手动找图的烦恼。
+            </p>
+          </div>
+          <div
+            class="absolute -bottom-20 -right-20 opacity-10 group-hover:rotate-6 transition-transform"
+          >
+            <i class="ri-archive-drawer-fill text-[240px] text-ozon"></i>
+          </div>
+        </div>
+
+        <div
+          class="md:col-span-5 reveal glass-card rounded-[40px] p-12 group bg-slate-900 border-none text-white"
+        >
+          <div
+            class="w-16 h-16 bg-ozon text-white rounded-2xl flex items-center justify-center mb-8 shadow-lg shadow-blue-500/20"
+          >
+            <i class="ri-plug-fill text-3xl"></i>
+          </div>
+          <h3 class="text-3xl font-black mb-4 tracking-tight">Chrome 联动填充</h3>
+          <p class="text-slate-300 font-medium leading-relaxed mb-6">
+            与专用浏览器插件无缝协作。通过本地加密 API 协议，插件可直接在 Ozon
+            投诉页面注入所需数据，实现秒级申诉提交。
+          </p>
+          <div class="flex items-center gap-2 text-blue-400 font-bold text-xs">
+            <i class="ri-checkbox-circle-fill"></i>
+            <span>已适配 Ozon 最新后台协议</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 对比部分 -->
+    <section class="py-32 px-6">
+      <div class="max-w-5xl mx-auto">
+        <div class="text-center mb-16 reveal">
+          <h2 class="text-4xl font-black mb-4">为什么选择 OzonAssist?</h2>
+          <p class="text-slate-500 font-medium">告别效率低下的手动时代</p>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-8 reveal">
+          <div class="bg-white rounded-[32px] p-10 border border-slate-200">
+            <h4 class="text-xl font-bold mb-8 text-slate-400">手动申诉方式</h4>
+            <ul class="space-y-6">
+              <li class="flex items-start gap-4">
+                <i class="ri-close-circle-line text-red-500 text-xl mt-1"></i>
+                <div>
+                  <p class="font-bold">耗时极长</p>
+                  <p class="text-xs text-slate-500">单个 SKU 平均耗时 3-5 分钟，且容易疲劳出错</p>
+                </div>
+              </li>
+              <li class="flex items-start gap-4">
+                <i class="ri-close-circle-line text-red-500 text-xl mt-1"></i>
+                <div>
+                  <p class="font-bold">资料匹配困难</p>
+                  <p class="text-xs text-slate-500">需要在成百上千的文件中手动查找对应的授权书</p>
+                </div>
+              </li>
+              <li class="flex items-start gap-4">
+                <i class="ri-close-circle-line text-red-500 text-xl mt-1"></i>
+                <div>
+                  <p class="font-bold">缺乏进度反馈</p>
+                  <p class="text-xs text-slate-500">无法统计成功率，需要重复刷新页面查看结果</p>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <div
+            class="bg-slate-900 rounded-[32px] p-10 text-white shadow-2xl relative overflow-hidden"
+          >
+            <div class="absolute top-0 right-0 w-32 h-32 bg-blue-500/20 blur-[80px]"></div>
+            <h4 class="text-xl font-bold mb-8 text-ozon">OzonAssist 自动化</h4>
+            <ul class="space-y-6">
+              <li class="flex items-start gap-4">
+                <i class="ri-checkbox-circle-line text-ozon text-xl mt-1"></i>
+                <div>
+                  <p class="font-bold">秒级批量化</p>
+                  <p class="text-xs text-slate-400">
+                    一键注入后台，单任务并发提交，效率提升 30 倍以上
+                  </p>
+                </div>
+              </li>
+              <li class="flex items-start gap-4">
+                <i class="ri-checkbox-circle-line text-ozon text-xl mt-1"></i>
+                <div>
+                  <p class="font-bold">自动关联图库</p>
+                  <p class="text-xs text-slate-400">
+                    本地离线图库，SQLite 瞬间匹配侵权类型所需附件
+                  </p>
+                </div>
+              </li>
+              <li class="flex items-start gap-4">
+                <i class="ri-checkbox-circle-line text-ozon text-xl mt-1"></i>
+                <div>
+                  <p class="font-bold">全过程可视化</p>
+                  <p class="text-xs text-slate-400">
+                    实时进度条、成功率面板、失败原因回流，尽在掌握
+                  </p>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section id="faq" class="py-32 px-6 bg-slate-50/50">
+      <div class="max-w-4xl mx-auto">
+        <div class="text-center mb-16 reveal">
+          <h2 class="text-4xl font-black mb-4">常见问题</h2>
+          <p class="text-slate-500 font-medium">为您解答关于 OzonAssist 的一切疑问</p>
+        </div>
+
+        <div class="space-y-4">
+          <div class="reveal glass-card rounded-2xl p-6 border border-slate-200">
+            <h4 class="text-lg font-bold mb-2">使用本软件会不会导致封号？</h4>
+            <p class="text-sm text-slate-500 leading-relaxed">
+              软件完全模拟真实的人类操作流程，通过本地 API 与插件进行交互，不涉及篡改 Ozon
+              后台核心逻辑，安全性极高。我们已服务 1200+ 卖家，目前保持零风险记录。
+            </p>
+          </div>
+          <div class="reveal delay-100 glass-card rounded-2xl p-6 border border-slate-200">
+            <h4 class="text-lg font-bold mb-2">是否支持 macOS 平台？</h4>
+            <p class="text-sm text-slate-500 leading-relaxed">
+              是的。OzonAssist 基于 Electron 开发，完美适配 macOS (包括 M1/M2/M3 及 Intel 芯片) 和
+              Windows 10/11 系统。
+            </p>
+          </div>
+          <div class="reveal delay-200 glass-card rounded-2xl p-6 border border-slate-200">
+            <h4 class="text-lg font-bold mb-2">图片资料是存储在服务器上的吗？</h4>
+            <p class="text-sm text-slate-500 leading-relaxed">
+              不是。出于隐私考虑，所有的图片和 SKU 数据均存储在您本地的 SQLite
+              数据库中。除非您在使用过程中通过浏览器提交，否则任何数据都不会上传至云端。
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 用户评价 (滚动条) -->
+    <section class="py-32 overflow-hidden bg-slate-950 flex flex-col">
+      <div class="text-center mb-16 reveal px-6">
+        <h2 class="text-4xl font-black text-white mb-4 italic">来自 1200+ 卖家的真实反馈</h2>
+        <p class="text-slate-400 font-medium">高效、稳定、安全，他们都在用 OzonAssist</p>
+      </div>
+
+      <div class="animate-scroll">
+        <div class="flex gap-8 px-4">
+          <div class="testimonial-card">
+            <div class="flex items-center gap-4 mb-6">
+              <div
+                class="w-12 h-12 bg-ozon rounded-full flex items-center justify-center text-white font-black text-xl"
+              >
+                L
+              </div>
+              <div>
+                <div class="text-white font-bold text-lg">Li Wei</div>
+                <div class="text-slate-400 text-xs">深圳某年销千万级 Ozon 卖家</div>
+              </div>
+            </div>
+            <p class="text-slate-100 text-base leading-relaxed mb-6">
+              “以前每天要花 3 个小时写投诉，现在喝杯咖啡的功夫，100 个 SKU
+              的投诉就全部自动提交出去了，真的是救星！”
+            </p>
+            <div class="flex text-yellow-400 gap-1">
+              <i class="ri-star-fill"></i><i class="ri-star-fill"></i><i class="ri-star-fill"></i
+              ><i class="ri-star-fill"></i><i class="ri-star-fill"></i>
+            </div>
+          </div>
+
+          <div class="testimonial-card">
+            <div class="flex items-center gap-4 mb-6">
+              <div
+                class="w-12 h-12 bg-pink-500 rounded-full flex items-center justify-center text-white font-black text-xl"
+              >
+                A
+              </div>
+              <div>
+                <div class="text-white font-bold text-lg">Alex K.</div>
+                <div class="text-slate-400 text-xs">俄罗斯本土店运营负责人</div>
+              </div>
+            </div>
+            <p class="text-slate-100 text-base leading-relaxed mb-6">
+              “The plugin integration is seamless. It matches images from my local PC perfectly
+              according to the violation type.”
+            </p>
+            <div class="flex text-yellow-400 gap-1">
+              <i class="ri-star-fill"></i><i class="ri-star-fill"></i><i class="ri-star-fill"></i
+              ><i class="ri-star-fill"></i><i class="ri-star-fill"></i>
+            </div>
+          </div>
+
+          <div class="testimonial-card">
+            <div class="flex items-center gap-4 mb-6">
+              <div
+                class="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center text-white font-black text-xl"
+              >
+                M
+              </div>
+              <div>
+                <div class="text-white font-bold text-lg">Ms. Zhang</div>
+                <div class="text-slate-400 text-xs">某头部代运营机构</div>
+              </div>
+            </div>
+            <p class="text-slate-100 text-base leading-relaxed mb-6">
+              “我们公司有几十个账号，这个软件的本地图库同步功能解决了我们资料碎片化的问题，太高效了。”
+            </p>
+            <div class="flex text-yellow-400 gap-1">
+              <i class="ri-star-fill"></i><i class="ri-star-fill"></i><i class="ri-star-fill"></i
+              ><i class="ri-star-fill"></i><i class="ri-star-fill"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex gap-8 px-4">
+          <div class="testimonial-card">
+            <div class="flex items-center gap-4 mb-6">
+              <div
+                class="w-12 h-12 bg-ozon rounded-full flex items-center justify-center text-white font-black text-xl"
+              >
+                L
+              </div>
+              <div>
+                <div class="text-white font-bold text-lg">Li Wei</div>
+                <div class="text-slate-400 text-xs">深圳某年销千万级 Ozon 卖家</div>
+              </div>
+            </div>
+            <p class="text-slate-100 text-base leading-relaxed mb-6">
+              “以前每天要花 3 个小时写投诉，现在喝杯咖啡的功夫，100 个 SKU
+              的投诉就全部自动提交出去了，真的是救星！”
+            </p>
+            <div class="flex text-yellow-400 gap-1">
+              <i class="ri-star-fill"></i><i class="ri-star-fill"></i><i class="ri-star-fill"></i
+              ><i class="ri-star-fill"></i><i class="ri-star-fill"></i>
+            </div>
+          </div>
+
+          <div class="testimonial-card">
+            <div class="flex items-center gap-4 mb-6">
+              <div
+                class="w-12 h-12 bg-pink-500 rounded-full flex items-center justify-center text-white font-black text-xl"
+              >
+                A
+              </div>
+              <div>
+                <div class="text-white font-bold text-lg">Alex K.</div>
+                <div class="text-slate-400 text-xs">俄罗斯本土店运营负责人</div>
+              </div>
+            </div>
+            <p class="text-slate-100 text-base leading-relaxed mb-6">
+              “The plugin integration is seamless. It matches images from my local PC perfectly
+              according to the violation type.”
+            </p>
+            <div class="flex text-yellow-400 gap-1">
+              <i class="ri-star-fill"></i><i class="ri-star-fill"></i><i class="ri-star-fill"></i
+              ><i class="ri-star-fill"></i><i class="ri-star-fill"></i>
+            </div>
+          </div>
+
+          <div class="testimonial-card">
+            <div class="flex items-center gap-4 mb-6">
+              <div
+                class="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center text-white font-black text-xl"
+              >
+                M
+              </div>
+              <div>
+                <div class="text-white font-bold text-lg">Ms. Zhang</div>
+                <div class="text-slate-400 text-xs">某头部代运营机构</div>
+              </div>
+            </div>
+            <p class="text-slate-100 text-base leading-relaxed mb-6">
+              “我们公司有几十个账号，这个软件的本地图库同步功能解决了我们资料碎片化的问题，太高效了。”
+            </p>
+            <div class="flex text-yellow-400 gap-1">
+              <i class="ri-star-fill"></i><i class="ri-star-fill"></i><i class="ri-star-fill"></i
+              ><i class="ri-star-fill"></i><i class="ri-star-fill"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 隐私与安全 -->
+    <section id="security" class="py-32 px-6">
+      <div
+        class="max-w-7xl mx-auto glass-card rounded-[60px] p-20 flex flex-col md:flex-row items-center gap-16 border-slate-200 shadow-2xl relative overflow-hidden"
+      >
+        <div class="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 blur-[80px]"></div>
+        <div class="flex-1 reveal">
+          <div
+            class="inline-flex items-center gap-2 text-emerald-600 font-bold text-xs uppercase tracking-widest mb-6"
+          >
+            <i class="ri-shield-check-fill text-lg"></i>
+            Privacy First Design
+          </div>
+          <h2 class="text-4xl font-black mb-6 leading-tight">
+            您的数据，<span class="text-emerald-600">只属于您自己</span>
+          </h2>
+          <p class="text-slate-500 font-medium leading-relaxed mb-8">
+            不同于传统的云端自动化工具，OzonAssist
+            采用的是本地优先架构。所有的任务列表、投诉记录和凭证图片都加密存储在您硬盘上的 SQLite
+            数据库中。
+          </p>
+          <div class="grid grid-cols-2 gap-4">
+            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+              <div class="font-bold text-sm mb-1 text-slate-800">零云端存储</div>
+              <div class="text-[11px] text-slate-400">没有任何数据会上传至我们的服务器</div>
+            </div>
+            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+              <div class="font-bold text-sm mb-1 text-slate-800">离线可用性</div>
+              <div class="text-[11px] text-slate-400">在无外网环境下仍可编辑任务与图库</div>
+            </div>
+          </div>
+        </div>
+        <div
+          class="w-full md:w-96 aspect-square bg-slate-100 rounded-[40px] flex items-center justify-center border border-slate-200 reveal delay-200"
+        >
+          <i class="ri-lock-2-line text-[120px] text-slate-200"></i>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section id="download" class="py-32 px-6">
+      <div
+        class="max-w-5xl mx-auto bg-slate-900 rounded-[60px] p-20 text-center reveal relative overflow-hidden"
+      >
+        <div class="absolute inset-0 bg-linear-to-br from-blue-500/10 to-transparent"></div>
+        <h2 class="text-5xl font-black text-white mb-6 relative z-10 leading-tight">
+          让繁琐的维权申诉<br /><span class="text-ozon">在本地高效运行</span>
+        </h2>
+        <p class="text-slate-400 mb-10 relative z-10 font-medium">
+          OzonAssist 是开源软件，您可以免费使用或参与代码贡献。
+        </p>
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-6 relative z-10">
+          <a
+            href="https://github.com/hazedays/ozon-assist/releases"
+            target="_blank"
+            class="bg-ozon text-white px-12 py-6 rounded-3xl font-black hover:opacity-90 transition-all shadow-xl btn-glow text-xl flex items-center gap-3"
+          >
+            <i class="ri-download-cloud-2-line"></i>
+            获取最新 Release
+          </a>
+          <a
+            href="https://github.com/hazedays/ozon-assist"
+            target="_blank"
+            class="bg-white text-slate-900 px-12 py-6 rounded-3xl font-black hover:bg-slate-200 transition-all text-xl flex items-center gap-3"
+          >
+            <i class="ri-github-fill"></i>
+            查看源码
+          </a>
+        </div>
+        <p class="text-slate-500 mt-10 text-xs font-bold uppercase tracking-widest relative z-10">
+          Supported: macOS (Silicon/Intel), Windows 10/11, Linux
+        </p>
+      </div>
+    </section>
+
+    <footer
+      class="py-20 text-center text-slate-400 font-bold text-[10px] uppercase tracking-[0.2em]"
+    >
+      © 2026 Hazedays & OzonAssist. Powered by Electron & SQLite.
+    </footer>
+
+    <script>
+      // 滚动显示
+      const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+      }
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('active')
+            observer.unobserve(entry.target) // 一旦显示就不再监听，减少开销
+          }
+        })
+      }, observerOptions)
+
+      document.querySelectorAll('.reveal').forEach((el) => observer.observe(el))
+
+      // 导航栏滚动逻辑
+      const navbar = document.getElementById('navbar')
+      let isScrolled = false
+
+      window.addEventListener(
+        'scroll',
+        () => {
+          const scrollY = window.scrollY
+          if (scrollY > 20 && !isScrolled) {
+            navbar.classList.add('nav-scrolled')
+            isScrolled = true
+          } else if (scrollY <= 20 && isScrolled) {
+            navbar.classList.remove('nav-scrolled')
+            isScrolled = false
+          }
+        },
+        { passive: true }
+      )
+    </script>
+  </body>
+</html>
