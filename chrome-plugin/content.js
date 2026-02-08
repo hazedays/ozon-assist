@@ -22,7 +22,7 @@
   }
 
   const CONFIG = {
-    DELAYS: { SHORT: 1000, MEDIUM: 2000, LONG: 3000, INITIAL_WAIT: 5000 },
+    DELAYS: { SHORT: 800, MEDIUM: 1000, LONG: 1500, INITIAL_WAIT: 5000 },
     RETRIES: { ELEMENT_SEARCH: 8, UPLOAD_CHECK: 15 },
     MAX_CONSECUTIVE_FAILURES: 20,
     URLS: {
@@ -39,10 +39,12 @@
       IMAGE_PREVIEW: '.om_17_p2'
     },
     TEXTS: {
-      CATEGORY_1: 'Товары и Цены',
-      CATEGORY_2: 'Контроль качества',
-      CATEGORY_3: 'Нарушение правил площадки другим продавцом',
-      CATEGORY_4: 'Использование моих фото, видео, текста',
+      CATEGORYS: [
+        'Нарушение правил площадки другим продавцом',
+        'Использование моих фото, видео, текста',
+        'Контроль качества',
+        'Товары и Цены'
+      ],
       UPLOAD_REQUEST: 'пришлите',
       UPLOAD_DOCUMENT: 'документы',
       NEXT_COMPLAINT: 'Пожаловаться на другой товар'
@@ -141,7 +143,7 @@
     } catch (e) {
       logger.error('向后台发送任务失败消息时发生异常', e)
     }
-    await sleep(CONFIG.DELAYS.MEDIUM)
+    await sleep(CONFIG.DELAYS.SHORT)
     const failedCount = parseInt(
       sessionStorage.getItem(CONFIG.STORAGE_KEYS.FAILED_COUNT) || '0',
       10
@@ -190,7 +192,7 @@
       return
     }
     isProcessing = true
-    await sleep(CONFIG.DELAYS.MEDIUM)
+    await sleep(CONFIG.DELAYS.SHORT)
     logger.info('开始点击页面上的“帮助按钮”及其后续“联系客服按钮”...')
     try {
       const helpBtn = await waitForElement(CONFIG.SELECTORS.HELP_TEXT)
@@ -218,21 +220,16 @@
       currentWindowId = header.innerText.split('\n')[1]
       sessionStorage.setItem(CONFIG.STORAGE_KEYS.WINDOW_ID, currentWindowId)
       // 模拟点击类目选择器
-      const steps = [
-        CONFIG.TEXTS.CATEGORY_1,
-        CONFIG.TEXTS.CATEGORY_2,
-        CONFIG.TEXTS.CATEGORY_3,
-        CONFIG.TEXTS.CATEGORY_4
-      ]
-      for (let i = 0; i < steps.length; i++) {
-        if (isAborted()) return
-        logger.info(`正在尝试选择类目 (${i + 1}/${steps.length}): ${steps[i]}`)
-        const canNext = await verificationWindow()
-        if (!canNext) return taskFailed(`类目选择 "${steps[i]}" 时, 窗口验证失败`)
-        const span = await waitForElement(steps[i], true)
-        if (!span) return taskFailed(`类目选择 "${steps[i]}" 未找到`)
-        span.click()
-        logger.success(`类目 "${steps[i]}" 点击成功`)
+      const list = []
+      while (list.length !== CONFIG.TEXTS.CATEGORYS.length) {
+        const el = [...document.querySelectorAll('span')].find(
+          (s) => CONFIG.TEXTS.CATEGORYS.includes(s.innerText) && !list.includes(s.innerText)
+        )
+        if (el && !list.includes(el.innerText)) {
+          list.push(el.innerText)
+          el.click()
+          logger.success(`类目 "${el.innerText}" 点击成功`)
+        }
         await sleep(CONFIG.DELAYS.SHORT)
       }
       logger.success('类目导航完成')
@@ -338,7 +335,7 @@
     logger.info('正在点击提交按钮...')
     btns[1].click()
 
-    await sleep(CONFIG.DELAYS.MEDIUM)
+    await sleep(CONFIG.DELAYS.SHORT)
     let attempts = 0
     let hasNext = false
     logger.info('等待系统请求上传图片文档...')
@@ -428,7 +425,7 @@
       logger.success(`图片 "${fileName}" 已注入 input`)
 
       logger.info('等待图片上传预览渲染...')
-      await sleep(CONFIG.DELAYS.LONG)
+      await sleep(CONFIG.DELAYS.SHORT)
 
       const imgPreview = document.querySelector(CONFIG.SELECTORS.IMAGE_PREVIEW)
       if (imgPreview) {
