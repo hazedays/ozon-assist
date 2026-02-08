@@ -1,6 +1,6 @@
 {
   "name": "ozon-assist",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Professional Ozon Complaint Automation Tool",
   "main": "./out/main/index.js",
   "author": "OzonAssist Team",
