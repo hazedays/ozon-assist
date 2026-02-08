@@ -1,609 +1,535 @@
-// ============= 配置常量 =============
-const CONFIG = {
-  // 时间配置（毫秒）
-  DELAYS: {
-    SHORT: 1000,
-    MEDIUM: 2000,
-    LONG: 3000,
-    INITIAL_WAIT: 5000
-  },
-  // 重试配置
-  RETRIES: {
-    ELEMENT_SEARCH: 8,
-    UPLOAD_CHECK: 15
-  },
-  // 失败阈值
-  MAX_CONSECUTIVE_FAILURES: 50,
-  // URL 配置
-  URLS: {
-    SUPPORT: 'https://seller.ozon.ru/app/messenger?group=support_v2&auto=true',
-    MESSENGER: 'https://seller.ozon.ru/app/messenger?channel=SCRM',
-    MESSENGER_PATTERN:
-      /^https:\/\/seller\.ozon\.ru\/app\/messenger\/\?id=[0-9a-f-]{36}&group=support_v2$/i
-  },
-  // 选择器配置
-  SELECTORS: {
-    HELP_TEXT: '.index_helpText_Qm6HR',
-    CONTACT_SUPPORT: '.index_contactSupportButton_2LpVt',
-    TEXTAREA: 'textarea.om_17_a4',
-    SUBMIT_BUTTONS: 'button.om_17_a8',
-    FILE_INPUT: 'input[type="file"]',
-    IMAGE_PREVIEW: '.om_17_p2'
-  },
-  // 俄语文本常量
-  TEXTS: {
-    CATEGORY_1: 'Товары и Цены',
-    CATEGORY_2: 'Контроль качества',
-    CATEGORY_3: 'Нарушение правил площадки другим продавцом',
-    CATEGORY_4: 'Использование моих фото, видео, текста',
-    UPLOAD_REQUEST: 'пришлите',
-    UPLOAD_DOCUMENT: 'документы',
-    NEXT_COMPLAINT: 'Пожаловаться на другой товар'
-  },
-  // 存储键名
-  STORAGE_KEYS: {
-    AUTO_SUBMITTED: 'complaintAutoSubmitted',
-    CURRENT_SKU: 'currentComplaintSku',
-    FAILED_COUNT: 'currentFailedNum'
-  }
-}
-
-// 工具函数：延迟
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
-
-// 显示失败上限弹窗
-function showFailureLimitModal() {
-  // 检查是否已存在弹窗，避免重复创建
-  if (document.getElementById('ozon-failure-modal')) {
-    return
+/**
+ * Ozon Auto Complaint - Content Script (MV3 完整版)
+ */
+;(() => {
+  const logger = {
+    _getTime: () => new Date().toLocaleTimeString(),
+    info: (msg) =>
+      console.log(`%c[Ozon插件][${new Date().toLocaleTimeString()}] ${msg}`, 'color: #3498db;'),
+    warn: (msg) =>
+      console.log(`%c[Ozon插件] ⚠️ [${new Date().toLocaleTimeString()}] ${msg}`, 'color: #e67e22;'),
+    error: (msg, err = '') =>
+      console.log(
+        `%c[Ozon插件] ❌ [${new Date().toLocaleTimeString()}] ${msg}`,
+        'color: #e74c3c;',
+        err
+      ),
+    success: (msg) =>
+      console.log(
+        `%c[Ozon插件] ✅ [${new Date().toLocaleTimeString()}] ${msg}`,
+        'color: #27ae60; font-weight:bold;'
+      )
   }
 
-  const modal = document.createElement('div')
-  modal.id = 'ozon-failure-modal'
-  modal.innerHTML = `
-    <div style="
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.7);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 999999;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    ">
-      <div style="
-        background: white;
-        border-radius: 16px;
-        padding: 32px;
-        max-width: 480px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-        text-align: center;
-      ">
-        <div style="
-          width: 64px;
-          height: 64px;
-          background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin: 0 auto 24px;
-          font-size: 32px;
-        ">⚠️</div>
-        <h2 style="
-          margin: 0 0 16px;
-          font-size: 24px;
-          font-weight: 600;
-          color: #2c3e50;
-        ">自动化流程已停止</h2>
-        <p style="
-          margin: 0 0 24px;
-          font-size: 16px;
-          color: #7f8c8d;
-          line-height: 1.6;
-        ">
-          连续 <strong style="color: #e74c3c;">${CONFIG.MAX_CONSECUTIVE_FAILURES}</strong> 次任务失败<br>
-          可能原因：账号权限受限、网络异常或页面结构变更<br>
-          <span style="font-size: 14px; color: #95a5a6;">建议检查账号状态后重新启动</span>
-        </p>
-        <button id="ozon-modal-close" style="
-          background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-          color: white;
-          border: none;
-          padding: 12px 32px;
-          border-radius: 8px;
-          font-size: 16px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: transform 0.2s, box-shadow 0.2s;
-          box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
-        "
-        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(52, 152, 219, 0.4)'"
-        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(52, 152, 219, 0.3)'"
-        >我知道了</button>
-      </div>
-    </div>
-  `
-
-  document.body.appendChild(modal)
-
-  // 绑定关闭事件
-  document.getElementById('ozon-modal-close').addEventListener('click', () => {
-    modal.remove()
-  })
-
-  // 点击背景关闭
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) {
-      modal.remove()
+  const CONFIG = {
+    DELAYS: { SHORT: 1000, MEDIUM: 2000, LONG: 3000, INITIAL_WAIT: 5000 },
+    RETRIES: { ELEMENT_SEARCH: 8, UPLOAD_CHECK: 15 },
+    MAX_CONSECUTIVE_FAILURES: 20,
+    URLS: {
+      SUPPORT: 'https://seller.ozon.ru/app/messenger?group=support_v2&auto=true',
+      SCRM: 'https://seller.ozon.ru/app/messenger?channel=SCRM',
+      MESSENGER: 'https://seller.ozon.ru/app/messenger/?__rr=1&id='
+    },
+    SELECTORS: {
+      HELP_TEXT: '.index_helpText_Qm6HR',
+      CONTACT_SUPPORT: '.index_contactSupportButton_2LpVt',
+      TEXTAREA: 'textarea.om_17_a4',
+      SUBMIT_BUTTONS: 'button.om_17_a8',
+      FILE_INPUT: 'input[type="file"]',
+      IMAGE_PREVIEW: '.om_17_p2'
+    },
+    TEXTS: {
+      CATEGORY_1: 'Товары и Цены',
+      CATEGORY_2: 'Контроль качества',
+      CATEGORY_3: 'Нарушение правил площадки другим продавцом',
+      CATEGORY_4: 'Использование моих фото, видео, текста',
+      UPLOAD_REQUEST: 'пришлите',
+      UPLOAD_DOCUMENT: 'документы',
+      NEXT_COMPLAINT: 'Пожаловаться на другой товар'
+    },
+    STORAGE_KEYS: {
+      WINDOW_ID: 'window_id',
+      AUTO_SUBMITTED: 'complaintAutoSubmitted',
+      STOPPED_MANUALLY: 'complaintStoppedManually',
+      CURRENT_SKU: 'currentComplaintSku',
+      FAILED_COUNT: 'currentFailedNum'
     }
-  })
+  }
 
-  logger.info('已显示失败上限提示弹窗', '#e74c3c')
-}
+  let isProcessing = false
 
-// 自定义日志工具
-const logger = {
-  info: (msg, color = '#3498db') => console.log(`%c[Ozon插件] ${msg}`, `color: ${color};`),
-  warn: (msg) => console.log(`%c[Ozon插件] ⚠️ ${msg}`, 'color: #e67e22;'),
-  error: (msg, err = '') => console.log(`%c[Ozon插件] ❌ ${msg}`, 'color: #e74c3c;', err),
-  success: (msg) => console.log(`%c[Ozon插件] ✅ ${msg}`, 'color: #27ae60; font-weight: bold;'),
-  debug: (msg) => console.log(`[Ozon插件] ${msg}`)
-}
-
-// 防止重复注入及初始化监听
-if (window.ozonComplaintLoaded) {
-  logger.info('脚本已激活，跳过重新初始化', '#95a5a6')
-} else {
-  window.ozonComplaintLoaded = true
-  logger.info('=== Ozon 自动化核心已加载 ===', '#9b59b6')
-
-  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === 'submitComplaint') {
-      logger.info('收到外部提交指令')
+  function sleep(ms) {
+    return new Promise((r) => setTimeout(r, ms))
+  }
+  function isAborted() {
+    const canNext = sessionStorage.getItem(CONFIG.STORAGE_KEYS.STOPPED_MANUALLY) === 'true'
+    if (canNext) {
+      logger.warn('检测到手动停止标志，已中止自动化流程')
       sessionStorage.removeItem(CONFIG.STORAGE_KEYS.AUTO_SUBMITTED)
-      checkUrl()
-      sendResponse({ status: 'received' })
+      sessionStorage.removeItem(CONFIG.STORAGE_KEYS.CURRENT_SKU)
+    } else {
+      // 仅在调试时取消注释，避免日志太碎
+      // logger.info('检查流程状态：运行中...')
     }
-    return true
-  })
-}
-
-// 页面状态检查
-const url = window.location.href
-const autoSubmitted = sessionStorage.getItem(CONFIG.STORAGE_KEYS.AUTO_SUBMITTED)
-
-logger.debug(`当前URL: ${url} | 准备就绪: ${document.readyState} | 自动标志: ${autoSubmitted}`)
-
-// 等待页面完全加载后执行
-function executeWhenReady(callback) {
-  if (document.readyState === 'complete') {
-    callback()
-  } else {
-    window.addEventListener('load', callback)
+    return canNext
   }
-}
-
-if (url.endsWith('&auto=true')) {
-  logger.info('检测到自动化引导参数')
-  executeWhenReady(createComplaint)
-} else if (autoSubmitted === 'true' && url === CONFIG.URLS.MESSENGER) {
-  logger.info('检测到延续性自动标志')
-  sleep(CONFIG.DELAYS.INITIAL_WAIT).then(() => {
-    executeWhenReady(startStep)
-  })
-}
-
-// 检查并跳转
-function checkUrl() {
-  if (!window.location.href.endsWith(CONFIG.URLS.SUPPORT)) {
-    logger.info('目标页面不符，正在重定向到支持页面...')
-    window.location.href = CONFIG.URLS.SUPPORT
-  } else {
-    createComplaint()
+  function getCurrentComplaintSku() {
+    const sku = sessionStorage.getItem(CONFIG.STORAGE_KEYS.CURRENT_SKU)
+    logger.info(`读取当前处理中的 SKU: ${sku || '无'}`)
+    return sku
   }
-}
 
-// 通用查找函数 - 优化延迟策略（指数退避）
-async function waitForElement(
-  selector,
-  maxAttempts = CONFIG.RETRIES.ELEMENT_SEARCH,
-  isText = false
-) {
-  for (let i = 0; i < maxAttempts; i++) {
-    logger.debug(`正在寻找元素: ${selector} (尝试: ${i + 1}/${maxAttempts})`)
-    const el = isText ? findElementByText(selector) : document.querySelector(selector)
-    if (el) {
-      logger.debug(`成功定位到元素: ${selector}`)
-      return el
+  async function waitForElement(selector, isText = false) {
+    logger.info(`正在等待元素: ${selector} (isText: ${isText})...`)
+    for (let attempt = 0; attempt < CONFIG.MAX_CONSECUTIVE_FAILURES; attempt++) {
+      if (isText) {
+        const el = [...document.querySelectorAll('span')].find(
+          (s) => s.innerText.trim() === selector.trim()
+        )
+        if (el) return el
+      } else {
+        const el = document.querySelector(selector)
+        if (el) return el
+      }
+      await sleep(Math.min(500 * (attempt + 1), 2000))
     }
-    // 使用指数退避策略：500ms, 1000ms, 1500ms, 2000ms...
-    await sleep(Math.min(500 * (i + 1), 2000))
-  }
-  logger.warn(`未能在限时内找到元素: ${selector}`)
-  return null
-}
-
-// 任务失败回调
-async function taskFailed() {
-  try {
-    await chrome.runtime.sendMessage({
-      action: 'get',
-      url: '/task/failed'
-    })
-  } catch (error) {
-    logger.error('任务失败回调异常:', error)
+    logger.warn(`等待元素超时: ${selector}`)
+    return null
   }
 
-  await sleep(CONFIG.DELAYS.MEDIUM)
+  async function verificationWindow() {
+    const windowId = sessionStorage.getItem(CONFIG.STORAGE_KEYS.WINDOW_ID)
+    if (!windowId) {
+      logger.info('sessionStorage 中未找到 window_id，跳过窗口验证')
+      return true
+    }
+    const header = await waitForElement('div.index_headerContainer_l0AH6')
+    if (!header) {
+      logger.error('窗口验证失败: 未找到 Header 容器 (index_headerContainer_l0AH6)')
+      return false
+    }
+    currentWindowId = header.innerText.split('\n')[1]
+    logger.info(`当前窗口 ID: ${currentWindowId}, 目标 ID: ${windowId}`)
+    if (currentWindowId === windowId) {
+      return true
+    }
+    const el = await waitForElement(`div[conversationid="${windowId}"]`)
+    if (!el) {
+      logger.warn(`窗口验证失败: 未找到目标 conversationId 为 ${windowId} 的元素`)
+      return false
+    }
+    el.click()
+    await sleep(CONFIG.DELAYS.SHORT)
 
-  // 检查连续失败次数
-  const failedCount = parseInt(localStorage.getItem(CONFIG.STORAGE_KEYS.FAILED_COUNT) || '0', 10)
-
-  if (failedCount >= CONFIG.MAX_CONSECUTIVE_FAILURES) {
-    logger.error(`连续${CONFIG.MAX_CONSECUTIVE_FAILURES}次失败，停止自动化流程`)
-    localStorage.removeItem(CONFIG.STORAGE_KEYS.FAILED_COUNT)
-    showFailureLimitModal()
-    return
+    const header2 = await waitForElement('div.index_headerContainer_l0AH6')
+    if (!header2) return false
+    const verifiedId = header2.innerText.split('\n')[1]
+    if (verifiedId === windowId) {
+      logger.info('窗口验证通过')
+      return true
+    } else {
+      logger.error(`窗口锁定失败: 预期 ${windowId}, 实际 ${verifiedId}`)
+      return false
+    }
   }
 
-  logger.warn(`任务失败 (${failedCount + 1}/${CONFIG.MAX_CONSECUTIVE_FAILURES})，准备重试...`)
-  localStorage.setItem(CONFIG.STORAGE_KEYS.FAILED_COUNT, (failedCount + 1).toString())
-  checkUrl()
-}
-
-// 创建投诉
-async function createComplaint() {
-  logger.info('--- 启动投诉创建流程 ---', '#9b59b6')
-  await sleep(CONFIG.DELAYS.SHORT)
-
-  const btn = await waitForElement(CONFIG.SELECTORS.HELP_TEXT)
-  if (!btn) {
-    await taskFailed()
-    return
-  }
-
-  btn.click()
-  await sleep(CONFIG.DELAYS.SHORT)
-
-  const fbBtn = await waitForElement(CONFIG.SELECTORS.CONTACT_SUPPORT)
-  if (!fbBtn) {
-    await taskFailed()
-    return
-  }
-
-  fbBtn.click()
-  sessionStorage.setItem(CONFIG.STORAGE_KEYS.AUTO_SUBMITTED, 'true')
-  logger.success('已进入邮件反馈模式，设置延续标志')
-
-  await sleep(CONFIG.DELAYS.SHORT)
-  startStep()
-}
-
-// 处理步骤
-async function startStep() {
-  logger.info('--- 正在执行类目导航 ---', '#9b59b6')
-
-  const steps = [
-    CONFIG.TEXTS.CATEGORY_1,
-    CONFIG.TEXTS.CATEGORY_2,
-    CONFIG.TEXTS.CATEGORY_3,
-    CONFIG.TEXTS.CATEGORY_4
-  ]
-
-  for (let i = 0; i < steps.length; i++) {
-    logger.info(`导航进度: ${i + 1}/${steps.length} (${steps[i]})`)
-    const span = await waitForElement(steps[i], CONFIG.RETRIES.ELEMENT_SEARCH, true)
-    if (!span) {
-      await taskFailed()
+  async function taskFailed(msg = null) {
+    logger.warn(`触发任务失败处理逻辑，原因: ${msg || '由于外部异常'}`)
+    try {
+      await chrome.runtime.sendMessage({ action: 'get', url: `/task/failed?msg=${msg}` })
+      logger.info('已成功通知后台任务失败状态')
+    } catch (e) {
+      logger.error('向后台发送任务失败消息时发生异常', e)
+    }
+    await sleep(CONFIG.DELAYS.MEDIUM)
+    const failedCount = parseInt(
+      sessionStorage.getItem(CONFIG.STORAGE_KEYS.FAILED_COUNT) || '0',
+      10
+    )
+    const newFailedCount = failedCount + 1
+    if (newFailedCount >= CONFIG.MAX_CONSECUTIVE_FAILURES) {
+      logger.error(
+        `连续失败次数 (${newFailedCount}) 已达到上限 ${CONFIG.MAX_CONSECUTIVE_FAILURES}，停止自动化`
+      )
+      sessionStorage.removeItem(CONFIG.STORAGE_KEYS.FAILED_COUNT)
+      isProcessing = false
+      sessionStorage.setItem(CONFIG.STORAGE_KEYS.STOPPED_MANUALLY, 'true')
+      sessionStorage.removeItem(CONFIG.STORAGE_KEYS.AUTO_SUBMITTED)
       return
     }
-
-    span.click()
-    await sleep(CONFIG.DELAYS.SHORT)
+    logger.warn(
+      `当前连续失败次数: ${newFailedCount}/${CONFIG.MAX_CONSECUTIVE_FAILURES}，准备重新检查 URL`
+    )
+    sessionStorage.setItem(CONFIG.STORAGE_KEYS.FAILED_COUNT, newFailedCount.toString())
+    isProcessing = false
+    checkUrl()
   }
 
-  logger.success('导航路径选择完毕')
-  getUnprocessed()
-}
-
-// 获取当前投诉SKU
-function getCurrentComplaintSku() {
-  return localStorage.getItem(CONFIG.STORAGE_KEYS.CURRENT_SKU)
-}
-
-// 获取未处理投诉
-async function getUnprocessed() {
-  logger.info('>>> 开始获取待处理投诉...')
-  try {
-    const response = await chrome.runtime.sendMessage({
-      action: 'get',
-      url: '/complaint/unprocessed'
-    })
-
-    if (response?.success) {
-      const { sku, id } = response.data
-      logger.success(`成功获取任务: SKU=${sku}, ID=${id}`)
-      // 成功获取任务，重置失败计数
-      localStorage.removeItem(CONFIG.STORAGE_KEYS.FAILED_COUNT)
-      localStorage.setItem(CONFIG.STORAGE_KEYS.CURRENT_SKU, sku)
-      simulateKeyboardInput(sku)
+  function checkUrl() {
+    sessionStorage.removeItem(CONFIG.STORAGE_KEYS.WINDOW_ID)
+    sessionStorage.removeItem(CONFIG.STORAGE_KEYS.STOPPED_MANUALLY)
+    sessionStorage.removeItem(CONFIG.STORAGE_KEYS.FAILED_COUNT)
+    const url = window.location.href
+    logger.info(`当前运行环境检测, URL: ${url}`)
+    if (!url.includes(CONFIG.URLS.SUPPORT)) {
+      logger.info(`当前不在支持页面, 正在执行跳转: ${CONFIG.URLS.SUPPORT}`)
+      window.location.href = CONFIG.URLS.SUPPORT
+    } else if (url.includes(CONFIG.URLS.SCRM) || url.includes(CONFIG.URLS.MESSENGER)) {
+      logger.success('检测到处于投诉详情页, 准备初始化投诉流程')
+      createComplaint()
     } else {
-      logger.info(`暂无待处理投诉: ${response?.message || '未知原因'}`, '#95a5a6')
+      logger.info('检测到处于支持中心主页, 即将创建投诉...')
+      createComplaint()
     }
-  } catch (error) {
-    logger.error('获取投诉异常:', error)
-  }
-}
-
-async function getRandomImage() {
-  const sku = getCurrentComplaintSku()
-  if (!sku) {
-    logger.error('无法获取当前 SKU')
-    return
   }
 
-  logger.info(`>>> 正在为 SKU: ${sku} 获取随机凭证图片...`)
-  try {
-    const response = await chrome.runtime.sendMessage({
-      action: 'get',
-      url: '/image/random'
-    })
+  async function createComplaint() {
+    sessionStorage.removeItem(CONFIG.STORAGE_KEYS.CURRENT_SKU)
+    if (isAborted() || isProcessing) {
+      logger.info(`流程创建前拦截: aborted=${isAborted()}, processing=${isProcessing}`)
+      return
+    }
+    isProcessing = true
+    await sleep(CONFIG.DELAYS.MEDIUM)
+    logger.info('开始点击页面上的“帮助按钮”及其后续“联系客服按钮”...')
+    try {
+      const helpBtn = await waitForElement(CONFIG.SELECTORS.HELP_TEXT)
+      if (!helpBtn) return taskFailed('页面“帮助按钮” (CONFIG.SELECTORS.HELP_TEXT) 未找到')
 
-    if (response?.success) {
-      const image = response.data
-      logger.success(`成功随机到图片: ID=${image.id}, URL=${image.url}`)
+      logger.info('执行：点击帮助按钮')
+      helpBtn.click()
+      await sleep(CONFIG.DELAYS.SHORT)
+      document.querySelector(CONFIG.SELECTORS.CONTACT_SUPPORT)?.click()
+      await sleep(CONFIG.DELAYS.SHORT)
+      startStep()
+    } catch (err) {
+      logger.error('在 createComplaint 函数中捕获到意外异常', err)
+      isProcessing = false
+    }
+  }
 
-      logger.info(`正在同步数据库关联 (SKU: ${sku} -> ImageID: ${image.id})...`)
-      const linkResp = await chrome.runtime.sendMessage({
+  async function startStep() {
+    if (isAborted()) return
+    logger.info('执行类目导航...')
+    try {
+      // 获取投诉id并存储到 sessionStorage
+      const header = await waitForElement('div.index_headerContainer_l0AH6')
+      if (!header) return taskFailed('投诉窗口标题未找到')
+      currentWindowId = header.innerText.split('\n')[1]
+      sessionStorage.setItem(CONFIG.STORAGE_KEYS.WINDOW_ID, currentWindowId)
+      // 模拟点击类目选择器
+      const steps = [
+        CONFIG.TEXTS.CATEGORY_1,
+        CONFIG.TEXTS.CATEGORY_2,
+        CONFIG.TEXTS.CATEGORY_3,
+        CONFIG.TEXTS.CATEGORY_4
+      ]
+      for (let i = 0; i < steps.length; i++) {
+        if (isAborted()) return
+        logger.info(`正在尝试选择类目 (${i + 1}/${steps.length}): ${steps[i]}`)
+        const canNext = await verificationWindow()
+        if (!canNext) return taskFailed(`类目选择 "${steps[i]}" 时, 窗口验证失败`)
+        const span = await waitForElement(steps[i], true)
+        if (!span) return taskFailed(`类目选择 "${steps[i]}" 未找到`)
+        span.click()
+        logger.success(`类目 "${steps[i]}" 点击成功`)
+        await sleep(CONFIG.DELAYS.SHORT)
+      }
+      logger.success('类目导航完成')
+      getUnprocessed()
+    } catch (err) {
+      logger.error('startStep 异常', err)
+      isProcessing = false
+    }
+  }
+
+  async function getUnprocessed() {
+    if (isAborted()) return
+    logger.info('准备向后台请求待处理任务 (SKU)...')
+    const canNext = await verificationWindow()
+    if (!canNext) return taskFailed('获取未处理SKU前, 窗口验证失败')
+    isProcessing = true
+    try {
+      const response = await chrome.runtime.sendMessage({
+        action: 'get',
+        url: '/complaint/unprocessed'
+      })
+      if (response?.success) {
+        const { sku, id } = response.data
+        logger.info(`从服务端成功获取任务: SKU [${sku}], 任务 ID [${id}]`)
+        sessionStorage.setItem(CONFIG.STORAGE_KEYS.CURRENT_SKU, sku)
+        logger.success(`SKU 已持久化到会话存储: ${sku}`)
+        simulateKeyboardInput(sku)
+      } else {
+        logger.warn('服务端反馈当前无待处理任务，流程挂起')
+        isProcessing = false
+      }
+    } catch (err) {
+      logger.error('在 getUnprocessed 获取任务请求过程中捕获异常', err)
+      isProcessing = false
+    }
+  }
+
+  async function simulateKeyboardInput(sku) {
+    if (isAborted()) return
+    const canNext = await verificationWindow()
+    if (!canNext) return taskFailed('输入SKU时, 窗口验证失败')
+    const textarea = document.querySelector(CONFIG.SELECTORS.TEXTAREA)
+    if (!textarea) return taskFailed('SKU输入框未找到')
+
+    logger.info(`准备输入 SKU: ${sku}`)
+    textarea.click()
+    textarea.focus()
+    textarea.scrollIntoView({ block: 'center' })
+
+    const setter = Object.getOwnPropertyDescriptor(
+      window.HTMLTextAreaElement.prototype,
+      'value'
+    ).set
+    setter.call(textarea, sku)
+    textarea.dispatchEvent(
+      new InputEvent('input', {
+        bubbles: true,
+        cancelable: true,
+        data: sku,
+        inputType: 'insertText'
+      })
+    )
+    textarea.dispatchEvent(new Event('change', { bubbles: true, composed: true }))
+    logger.info('触发了 input 和 change 事件')
+    logger.success('SKU输入完成')
+    await sleep(CONFIG.DELAYS.SHORT)
+
+    // ===== 二次校验 =====
+    await sleep(CONFIG.DELAYS.SHORT)
+    const currentVal = textarea.value.trim()
+    if (currentVal !== sku) {
+      logger.warn(`SKU二次校验失败: 期望=${sku}, 实际=${currentVal}`)
+      // 尝试重新输入一次
+      setter.call(textarea, sku)
+      textarea.dispatchEvent(
+        new InputEvent('input', {
+          bubbles: true,
+          cancelable: true,
+          data: sku,
+          inputType: 'insertText'
+        })
+      )
+      textarea.dispatchEvent(new Event('change', { bubbles: true, composed: true }))
+      await sleep(CONFIG.DELAYS.SHORT)
+
+      if (textarea.value.trim() !== sku) {
+        return taskFailed('SKU二次校验失败, 放弃本次任务')
+      } else {
+        logger.success('SKU二次校验成功')
+      }
+    }
+
+    submitComplaint()
+  }
+
+  async function submitComplaint() {
+    if (isAborted()) return
+    const canNext = await verificationWindow()
+    if (!canNext) return taskFailed('提交SKU时, 窗口验证失败')
+    const btns = document.querySelectorAll(CONFIG.SELECTORS.SUBMIT_BUTTONS)
+    if (btns.length < 2) return taskFailed('提交按钮未找到')
+
+    logger.info('正在点击提交按钮...')
+    btns[1].click()
+
+    await sleep(CONFIG.DELAYS.MEDIUM)
+    let attempts = 0
+    let hasNext = false
+    logger.info('等待系统请求上传图片文档...')
+
+    while (!hasNext && attempts < CONFIG.RETRIES.UPLOAD_CHECK) {
+      if (isAborted()) return
+      const body = document.body.innerText
+      hasNext =
+        body.includes(CONFIG.TEXTS.UPLOAD_REQUEST) && body.includes(CONFIG.TEXTS.UPLOAD_DOCUMENT)
+      if (!hasNext) {
+        attempts++
+        if (attempts % 3 === 0) {
+          logger.info(`持续等待中 (${attempts}/${CONFIG.RETRIES.UPLOAD_CHECK})...`)
+        }
+        await sleep(Math.min(500 * attempts, 2000))
+      }
+    }
+    if (!hasNext) {
+      logger.error('超时：未发现上传图片的文本请求提示')
+      return taskFailed('未发现上传图片请求提示')
+    }
+    logger.success('检测到上传请求，开始选择图片')
+    getRandomImage()
+  }
+
+  async function getRandomImage() {
+    const sku = getCurrentComplaintSku()
+    if (!sku) {
+      logger.error('获取随机图片前检测到 SKU 丢失')
+      return
+    }
+    logger.info(`正在为 SKU [${sku}] 获取随机证明图片...`)
+    try {
+      const resp = await chrome.runtime.sendMessage({ action: 'get', url: '/image/random' })
+      if (resp?.success) {
+        const { id, url } = resp.data
+        logger.success(`成功从图库获取图片: ID [${id}], URL [${url}]`)
+        await linkImageToSku(sku, id)
+        await setRandomNameImageFromUrl(url)
+      } else {
+        logger.error(`图库请求返回失败状态: ${JSON.stringify(resp)}`)
+      }
+    } catch (e) {
+      logger.error('在 getRandomImage 函数中捕获请求异常', e)
+    }
+  }
+
+  async function linkImageToSku(sku, imageId) {
+    logger.info(`正在建立关联关系: SKU [${sku}] <-> 图片ID [${imageId}]...`)
+    try {
+      await chrome.runtime.sendMessage({
         action: 'post',
         url: `/complaint/${sku}/image`,
-        data: { imageId: image.id }
+        data: { imageId }
       })
-      logger.debug('关联响应: ' + JSON.stringify(linkResp))
-
-      logger.info('开始下载并设置上传图片...')
-      setRandomNameImageFromUrl(image.url)
-    } else {
-      logger.error(`获取随机图片失败: ${response?.message || '未知错误'}`)
-    }
-  } catch (error) {
-    logger.error('获取图片流程异常:', error)
-  }
-}
-
-// 验证URL格式
-function validateOzonMessengerUrl(url) {
-  return CONFIG.URLS.MESSENGER_PATTERN.test(url)
-}
-
-function findElementByText(text) {
-  const allSpans = document.querySelectorAll('span')
-
-  for (const span of allSpans) {
-    if (span.innerText.trim() === text.trim()) {
-      logger.debug(`找到目标文本元素: ${text}`)
-      return span
+      logger.success('后台已成功记录 SKU 与图片的绑定关系')
+    } catch (e) {
+      logger.error('在 linkImageToSku 关联请求中捕获异常', e)
     }
   }
 
-  logger.debug(`未找到包含文本 "${text}" 的span元素`)
-  return null
-}
+  async function setRandomNameImageFromUrl(imageUrl) {
+    const fileInput = document.querySelector(CONFIG.SELECTORS.FILE_INPUT)
+    if (!fileInput) return taskFailed('文件上传输入框未找到')
+    const canNext = await verificationWindow()
+    if (!canNext) return taskFailed('上传图片时, 窗口验证失败')
 
-// 模拟键盘输入
-async function simulateKeyboardInput(sku) {
-  const textarea = document.querySelector(CONFIG.SELECTORS.TEXTAREA)
-  if (!textarea) {
-    logger.error(`未找到输入框 (${CONFIG.SELECTORS.TEXTAREA})`)
-    await taskFailed()
-    return
-  }
+    try {
+      logger.info(`开始处理图片: ${imageUrl}`)
+      const response = await chrome.runtime.sendMessage({ action: 'fetchImage', url: imageUrl })
+      if (!response?.success) throw new Error(response?.error || 'Background fetch 失败')
 
-  logger.info(`准备输入 SKU: ${sku}`)
+      logger.info('图片二进制转换中...')
+      const res = await fetch(response.data)
+      const blob = await res.blob()
+      const ext = response.type?.split('/')[1] || 'jpg'
+      const fileName = `${Math.random().toString(36).substring(7)}.${ext}`
 
-  // 1. 强制激活文本框（模拟真人点击+聚焦）
-  textarea.click()
-  textarea.focus()
-  textarea.scrollIntoView({ block: 'center' })
+      const file = new File([blob], fileName, {
+        type: response.type || 'image/jpeg'
+      })
 
-  // 2. 绕开拦截：直接修改DOM的value属性
-  const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-    window.HTMLTextAreaElement.prototype,
-    'value'
-  ).set
-  nativeInputValueSetter.call(textarea, sku)
+      const dt = new DataTransfer()
+      dt.items.add(file)
+      fileInput.files = dt.files
+      fileInput.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }))
+      logger.success(`图片 "${fileName}" 已注入 input`)
 
-  // 3. 触发事件穿透框架监听
-  const inputEvent = new InputEvent('input', {
-    bubbles: true,
-    cancelable: true,
-    composed: true,
-    data: sku,
-    inputType: 'insertText'
-  })
-  textarea.dispatchEvent(inputEvent)
-  textarea.dispatchEvent(new Event('change', { bubbles: true, composed: true }))
+      logger.info('等待图片上传预览渲染...')
+      await sleep(CONFIG.DELAYS.LONG)
 
-  logger.success('输入完成，准备提交...')
-  await sleep(CONFIG.DELAYS.SHORT)
-  submitComplaint()
-}
-
-async function submitComplaint() {
-  const elements = document.querySelectorAll(CONFIG.SELECTORS.SUBMIT_BUTTONS)
-  if (elements.length < 2) {
-    logger.error('未找到足够的提交按钮')
-    await taskFailed()
-    return
-  }
-
-  logger.info('正在点击提交按钮...')
-  elements[1].click()
-  await sleep(CONFIG.DELAYS.MEDIUM)
-
-  let hasNext = false
-  let attempts = 0
-  logger.info('正在等待上传文件的要求出现...')
-
-  while (!hasNext && attempts < CONFIG.RETRIES.UPLOAD_CHECK) {
-    // 模糊匹配：包含 "пришлите" (发送) 和 "документы" (文件)
-    const bodyText = document.body.innerText
-    hasNext =
-      bodyText.includes(CONFIG.TEXTS.UPLOAD_REQUEST) &&
-      bodyText.includes(CONFIG.TEXTS.UPLOAD_DOCUMENT)
-
-    if (!hasNext) {
-      attempts++
-      await sleep(CONFIG.DELAYS.SHORT)
-    }
-  }
-
-  if (!hasNext) {
-    logger.error('超时未检测到上传文件的要求，可能 SKU 无效或已投诉')
-    await taskFailed()
-    return
-  }
-
-  logger.success('检测到上传要求，开始随机选择凭证图片...')
-  getRandomImage()
-}
-
-/**
- * 从图片URL下载文件，设置随机文件名+自动识别类型，写入input[type="file"]
- * @param {string} imageUrl - 图片的远程URL
- */
-async function setRandomNameImageFromUrl(imageUrl) {
-  const fileInput = document.querySelector(CONFIG.SELECTORS.FILE_INPUT)
-  if (!fileInput) {
-    logger.error(`未找到 ${CONFIG.SELECTORS.FILE_INPUT}`)
-    return
-  }
-
-  try {
-    logger.info('正在拉取图片数据 (通过后台代理)...')
-    const response = await chrome.runtime.sendMessage({
-      action: 'fetchImage',
-      url: imageUrl
-    })
-
-    if (!response?.success) {
-      throw new Error(response?.error || '后台代理抓取失败')
-    }
-
-    const dataUrl = response.data
-    const res = await fetch(dataUrl)
-    const blob = await res.blob()
-
-    const imageType = response.type || 'image/jpeg'
-    const ext = imageType.split('/')[1] || 'jpg'
-    const randomFileName = `${Math.random().toString(36).substring(7)}.${ext}`
-    const imageFile = new File([blob], randomFileName, { type: imageType })
-
-    const dataTransfer = new DataTransfer()
-    dataTransfer.items.add(imageFile)
-    fileInput.files = dataTransfer.files
-    fileInput.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }))
-
-    logger.success(`图片已注入: ${randomFileName} (${(blob.size / 1024).toFixed(1)} KB)`)
-
-    await sleep(CONFIG.DELAYS.LONG)
-
-    // 检查图片是否已正常显示
-    const imgPreview = document.querySelector(CONFIG.SELECTORS.IMAGE_PREVIEW)
-    if (imgPreview) {
-      const btns = document.querySelectorAll(CONFIG.SELECTORS.SUBMIT_BUTTONS)
-      if (btns.length >= 2) {
-        logger.info('检测到预览图，执行最终发送...')
-        btns[1].click()
+      const imgPreview = document.querySelector(CONFIG.SELECTORS.IMAGE_PREVIEW)
+      if (imgPreview) {
+        logger.success('检测到图片预览，准备提交最终表单')
+        document.querySelectorAll(CONFIG.SELECTORS.SUBMIT_BUTTONS)[1].click()
         await checkResult()
       } else {
-        logger.warn('提交按钮状态异常')
-        await taskFailed()
+        logger.error('图片注入后未能在规定时间内显示预览图')
+        taskFailed('图片上传失败，未找到预览元素')
       }
-    } else {
-      logger.error('图片预览未出现，可能上传失败')
-      await taskFailed()
+    } catch (e) {
+      logger.error('setRandomNameImageFromUrl 过程捕获到异常', e)
+      taskFailed('图片上传异常')
     }
-  } catch (error) {
-    logger.error('图片流程中断:', error)
-    await taskFailed()
-  }
-}
-
-/**
- * 获取当前投诉的 SKU 并轮询结果状态，检测是否被驳回
- */
-async function checkResult() {
-  const sku = getCurrentComplaintSku()
-  if (!sku) {
-    logger.info('未找到当前处理中的 SKU，忽略结果轮询', '#95a5a6')
-    return
   }
 
-  const nextBtn = await waitForElement(
-    CONFIG.TEXTS.NEXT_COMPLAINT,
-    CONFIG.RETRIES.ELEMENT_SEARCH,
-    true
-  )
+  async function checkResult() {
+    const sku = getCurrentComplaintSku()
+    if (!sku) return taskFailed('未找到SKU')
+    const canNext = await verificationWindow()
+    if (!canNext) return taskFailed('检查结果时, 窗口验证失败')
 
-  try {
-    const updateResp = await chrome.runtime.sendMessage({
-      action: 'post',
-      url: `/complaint/${sku}/status`,
-      data: { status: nextBtn ? 'success' : 'failed' }
-    })
-    logger.debug('状态更新响应: ' + JSON.stringify(updateResp))
-  } catch (error) {
-    logger.error('状态更新失败:', error)
+    logger.info('正在检查投诉提交结果...')
+    const nextBtn = await waitForElement(CONFIG.TEXTS.NEXT_COMPLAINT, true)
+    const status = nextBtn ? 'success' : 'failed'
+
+    if (nextBtn) {
+      logger.success(`投诉结果: 成功 (检测到 "${CONFIG.TEXTS.NEXT_COMPLAINT}" 按钮)`)
+    } else {
+      logger.warn(`投诉结果: 疑似失败 (未检测到 "${CONFIG.TEXTS.NEXT_COMPLAINT}" 按钮)`)
+    }
+
+    try {
+      chrome.runtime.sendMessage({
+        action: 'post',
+        url: `/complaint/${sku}/status`,
+        data: { status }
+      })
+      logger.info(`向服务端同步投诉状态: ${status}`)
+    } catch (e) {
+      logger.error('checkResult 状态同步异常', e)
+    }
+
+    localStorage.removeItem(CONFIG.STORAGE_KEYS.CURRENT_SKU)
+    isProcessing = false
+    if (isAborted()) return
+    continueTask(nextBtn)
   }
 
-  localStorage.removeItem(CONFIG.STORAGE_KEYS.CURRENT_SKU)
-
-  if (!nextBtn) {
-    logger.warn('无法继续投诉, 当前窗口已失效')
-
-    // 使用数字类型而非字符串比较
-    const failedCount = parseInt(localStorage.getItem(CONFIG.STORAGE_KEYS.FAILED_COUNT) || '0', 10)
-
-    if (failedCount >= CONFIG.MAX_CONSECUTIVE_FAILURES) {
-      logger.error(`连续${CONFIG.MAX_CONSECUTIVE_FAILURES}次失败，可能账号权限受限，停止自动化流程`)
-      localStorage.removeItem(CONFIG.STORAGE_KEYS.FAILED_COUNT)
-      showFailureLimitModal()
+  async function continueTask(btn) {
+    if (!btn) {
+      logger.warn('未能在当前页面找到“继续投诉”按钮，准备重新跳转流程')
+      checkUrl()
       return
     }
-
-    localStorage.setItem(CONFIG.STORAGE_KEYS.FAILED_COUNT, (failedCount + 1).toString())
-    checkUrl()
-    return
+    logger.info('点击“继续投诉”按钮开始下一个任务...')
+    btn.click()
+    await sleep(CONFIG.DELAYS.MEDIUM)
+    getUnprocessed()
   }
 
-  // 成功则重置失败计数
-  localStorage.removeItem(CONFIG.STORAGE_KEYS.FAILED_COUNT)
-  nextBtn.click()
-  await sleep(CONFIG.DELAYS.MEDIUM)
+  logger.info('=== Ozon 自动化 Content Script 已加载 ===')
 
-  // 点击继续投诉，触发下一轮流程
-  getUnprocessed()
-}
+  window.addEventListener('load', () => {
+    const url = window.location.href
+    logger.info(`【页面事件】load 已触发, 当前 URL: ${url}`)
+    if (sessionStorage.getItem(CONFIG.STORAGE_KEYS.AUTO_SUBMITTED) === 'true') {
+      logger.info('检测到 AUTO_SUBMITTED 标志为开启状态, 正在评估是否继续任务...')
+      if (!isAborted() && url.includes(CONFIG.URLS.SUPPORT)) {
+        logger.info('符合自动执行条件, 重新初始化 createComplaint')
+        createComplaint()
+      } else if (!isAborted() && url.includes(CONFIG.URLS.SCRM)) {
+        startStep()
+      } else {
+        logger.info(
+          `自动任务拦截点: isAborted=${isAborted()}, urlIncludesSupport=${url.includes(CONFIG.URLS.SUPPORT)}`
+        )
+      }
+    }
+  })
 
-// 初始化逻辑
-logger.info('Ozon 自动化插件已成功加载', '#2980b9')
-
-const currentUrl = window.location.href
-if (validateOzonMessengerUrl(currentUrl)) {
-  logger.info('检测到目标聊天页面，寻找类目入口...')
-  const target = findElementByText(CONFIG.TEXTS.CATEGORY_1)
-  if (target) {
-    target.click()
-    logger.info(`已触发"${CONFIG.TEXTS.CATEGORY_1}"，将在 2s 后扫描待处理任务`)
-    setTimeout(() => {
-      getUnprocessed()
-    }, CONFIG.DELAYS.MEDIUM)
-  } else {
-    logger.warn(`未找到"${CONFIG.TEXTS.CATEGORY_1}"按钮，建议手动操作或刷新页面`)
-  }
-}
+  // ====== 接收 Background 消息 ======
+  chrome.runtime.onMessage.addListener((request) => {
+    if (!request?.action) return
+    logger.info(`【消息通讯】收到后台消息: ${JSON.stringify(request)}`)
+    if (request.action === 'submitComplaint') {
+      if (isProcessing) {
+        return logger.warn('指令拦截：已有一个处理中的任务，跳过本次启动指令')
+      }
+      logger.info('收到启动指令 [submitComplaint]，重置会话状态并开始流程')
+      sessionStorage.removeItem(CONFIG.STORAGE_KEYS.CURRENT_SKU)
+      sessionStorage.setItem(CONFIG.STORAGE_KEYS.AUTO_SUBMITTED, 'true')
+      sessionStorage.removeItem(CONFIG.STORAGE_KEYS.STOPPED_MANUALLY)
+      checkUrl()
+    } else if (request.action === 'stopComplaint') {
+      logger.info('收到停止指令 [stopComplaint]，正在执行状态清理...')
+      sessionStorage.setItem(CONFIG.STORAGE_KEYS.STOPPED_MANUALLY, 'true')
+      sessionStorage.removeItem(CONFIG.STORAGE_KEYS.AUTO_SUBMITTED)
+      sessionStorage.removeItem(CONFIG.STORAGE_KEYS.CURRENT_SKU)
+      isProcessing = false
+      logger.success('自动化流程已停止')
+    }
+  })
+})()

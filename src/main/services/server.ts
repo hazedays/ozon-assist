@@ -166,14 +166,14 @@ class ServerService {
       })
 
       // 上报警报/任务失败接口
-      app.get('/api/task/failed', (_req, res) => {
+      app.get('/api/task/failed', (req, res) => {
         try {
           logger.warn('[API] Received failure report from plugin.')
-
+          const msg = req.query.msg || '插件上报了一个错误，但未提供详细信息。'
           // 仅显示系统通知，不操作数据库记录
           new Notification({
             title: 'OzonAssist 任务异常',
-            body: '浏览器插件上报了一个错误。这可能是由于 Ozon 页面结构变更或网络闪断引起的。',
+            body: `${msg}`,
             silent: false
           }).show()
           res.json({ success: true, message: 'Notification and Dialog shown' })
