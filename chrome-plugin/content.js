@@ -222,6 +222,8 @@
       // 模拟点击类目选择器
       const list = []
       while (list.length !== CONFIG.TEXTS.CATEGORYS.length) {
+        const canNext = await verificationWindow()
+        if (!canNext) return taskFailed('投诉窗口未找到')
         const el = [...document.querySelectorAll('span')].find(
           (s) => CONFIG.TEXTS.CATEGORYS.includes(s.innerText) && !list.includes(s.innerText)
         )
