@@ -23,9 +23,9 @@ export interface Complaint {
   imageId?: number
   /** 备注信息（可选） */
   remark?: string
-  /** 记录创建时间（ISO 8601 格式，例: 2026-01-24T17:00:00Z） */
+  /** 记录创建时间（ISO 8601 格式，例: 2026-02-22T17:00:00Z） */
   createdAt: string
-  /** 记录最后更新时间（ISO 8601 格式，例: 2026-01-24T17:30:00Z） */
+  /** 记录最后更新时间（ISO 8601 格式，例: 2026-02-22T17:30:00Z） */
   updatedAt: string
 }
 

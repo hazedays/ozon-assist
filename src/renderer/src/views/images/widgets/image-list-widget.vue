@@ -171,6 +171,10 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * 凭证列表小组件
+ * 核心凭证管理工具，支持全量展示、实时分页搜索、图片预览以及物理删除
+ */
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useImageStore } from '@renderer/stores/image'

@@ -36,6 +36,10 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * 凭证统计小组件
+ * 显示凭证总数、磁盘占用空间以及配置的页面加载大小
+ */
 import { computed } from 'vue'
 import { useImageStore } from '@renderer/stores/image'
 
@@ -52,10 +56,10 @@ const stats = computed(() => [
   {
     label: '凭证总数',
     value: imageStore.total,
-    unit: 'FILES',
+    unit: '张',
     icon: 'ri-image-2-line',
     color: 'bg-ozon',
-    desc: 'IMAGES DATABASE'
+    desc: '本地图片数据库'
   },
   {
     label: '空间占用',
@@ -63,15 +67,15 @@ const stats = computed(() => [
     unit: totalSizeFormatted.value.unit,
     icon: 'ri-hard-drive-2-line',
     color: 'bg-indigo-600',
-    desc: 'LOCAL STORAGE USAGE'
+    desc: '本地存储使用量'
   },
   {
-    label: '页面效率',
+    label: '加载效率',
     value: imageStore.pageSize,
-    unit: 'IPS',
+    unit: '张/页',
     icon: 'ri-speed-up-line',
     color: 'bg-emerald-600',
-    desc: 'IMAGES PER SECTION'
+    desc: '单页资源加载量'
   }
 ])
 </script>

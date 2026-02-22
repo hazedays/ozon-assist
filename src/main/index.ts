@@ -8,7 +8,7 @@
  * - 集成本地服务器服务
  */
 
-import { app, shell, BrowserWindow, nativeTheme, protocol, net } from 'electron'
+import { app, shell, BrowserWindow, nativeTheme, protocol, net, ipcMain } from 'electron'
 import { join } from 'path'
 import { pathToFileURL } from 'url'
 import { electronApp, is } from '@electron-toolkit/utils'
@@ -26,6 +26,71 @@ import { APP_CONSTANTS } from '@shared/constants'
 
 /** 主窗口实例 */
 let mainWindow: BrowserWindow | null = null
+
+// ==================== 法律与支持窗口管理 ====================
+
+/** 储存已打开的二级窗口实例，避免重复打开 */
+const subWindows = new Map<string, BrowserWindow>()
+
+/**
+ * 创建并管理独立的法律/支持窗口
+ * @param route 路由路径 (例如: 'terms', 'privacy', 'support')
+ */
+function createSubWindow(route: string): void {
+  const windowKey = `legal-${route}`
+
+  // 如果窗口已打开且未销毁，则聚焦该窗口
+  if (subWindows.has(windowKey)) {
+    const existingWin = subWindows.get(windowKey)
+    if (existingWin && !existingWin.isDestroyed()) {
+      if (existingWin.isMinimized()) existingWin.restore()
+      existingWin.focus()
+      return
+    }
+  }
+
+  // 创建一个精简的辅助窗口
+  const subWin = new BrowserWindow({
+    width: 800,
+    height: 700,
+    minWidth: 480,
+    minHeight: 500,
+    show: false,
+    autoHideMenuBar: true,
+    title: 'Ozon Assist',
+    icon,
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      sandbox: false,
+      devTools: is.dev
+    }
+  })
+
+  subWindows.set(windowKey, subWin)
+
+  // 窗口关闭时从缓存中移除
+  subWin.on('closed', () => {
+    subWindows.delete(windowKey)
+  })
+
+  // 资源就绪后显示
+  subWin.once('ready-to-show', () => {
+    subWin.show()
+  })
+
+  // 针对不同环境加载对应的 URL 或本地文件 (使用 Hash 路由定位到 /legal/子路径)
+  const baseUrl =
+    is.dev && process.env['ELECTRON_RENDERER_URL']
+      ? process.env['ELECTRON_RENDERER_URL']
+      : `file://${join(__dirname, '../renderer/index.html')}`
+
+  subWin.loadURL(`${baseUrl}#/legal/${route}`)
+}
+
+/** 注册跨进程通信监听：打开法律相关窗口 */
+ipcMain.on('open-sub-window', (_event, route: string) => {
+  createSubWindow(route)
+})
 
 // ==================== 单实例控制 ====================
 

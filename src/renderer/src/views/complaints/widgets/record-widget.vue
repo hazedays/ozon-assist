@@ -265,6 +265,10 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * 投诉记录管理组件
+ * 支持 SKU 及状态过滤、日期范围筛选以及分页展示历史投诉数据
+ */
 import dayjs from 'dayjs'
 import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'

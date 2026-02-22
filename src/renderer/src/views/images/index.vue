@@ -8,18 +8,22 @@
       </p>
     </div>
 
-    <!-- Stats -->
+    <!-- 统计指标 -->
     <ImageStatWidget />
 
-    <!-- Import -->
+    <!-- 导入组件 -->
     <ImageImportWidget />
 
-    <!-- Table -->
+    <!-- 凭证列表 -->
     <ImageListWidget />
   </div>
 </template>
 
 <script setup lang="ts">
+/**
+ * 凭证中心主页面
+ * 聚合凭证统计、批量导入和凭证列表管理功能
+ */
 import ImageStatWidget from './widgets/image-stat-widget.vue'
 import ImageImportWidget from './widgets/image-import-widget.vue'
 import ImageListWidget from './widgets/image-list-widget.vue'

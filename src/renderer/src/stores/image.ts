@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
-import { databaseService } from '@renderer/services/database'
-import { serverService } from '@renderer/services/server'
+import { databaseApi } from '@renderer/api/modules/database'
+import { serverApi } from '@renderer/api/modules/server'
 import logger from '@renderer/core/logger'
 
 interface ImageRecord {
@@ -63,12 +63,12 @@ export const useImageStore = defineStore('image', {
       this.loading = true
       try {
         const [listData, url] = await Promise.all([
-          databaseService.getImages({
+          databaseApi.getImages({
             page: this.currentPage,
             pageSize: this.pageSize,
             search: this.filters.search
           }),
-          serverService.getUrl()
+          serverApi.getUrl()
         ])
         this.records = listData.items
         this.total = listData.total
@@ -101,7 +101,7 @@ export const useImageStore = defineStore('image', {
 
     async removeRecord(id: number) {
       try {
-        const result = await databaseService.deleteImage(id)
+        const result = await databaseApi.deleteImage(id)
         if (result.success) {
           await this.refresh()
         }

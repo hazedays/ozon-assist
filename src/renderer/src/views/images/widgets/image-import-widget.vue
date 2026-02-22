@@ -12,7 +12,7 @@
         <div>
           <h3 class="text-sm font-bold text-slate-800 uppercase italic">导入凭证文件</h3>
           <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">
-            Select and import voucher images to the library
+            选择并导入图片凭证到本地数据库
           </p>
         </div>
       </div>
@@ -34,7 +34,7 @@
       </div>
     </div>
 
-    <!-- Drop Zone (Optional visual) -->
+    <!-- 图片拖拽区域 -->
     <div
       class="mt-6 border-2 border-dashed border-slate-100 rounded-xl p-8 flex flex-col items-center justify-center gap-3 transition-colors hover:bg-slate-50 cursor-pointer"
       @dragover.prevent="isDragging = true"
@@ -52,15 +52,19 @@
         class="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed text-center"
       >
         将图片文件拖拽至此处 <br />
-        <span class="text-ozon/60 lowercase italic font-medium">Supports JPG, PNG, WEBP</span>
+        <span class="text-ozon/60 lowercase italic font-medium">支持 JPG, PNG, WEBP 格式</span>
       </p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+/**
+ * 凭证导入小组件
+ * 处理文件的批量选择、拖放识别及并发上传到本地库
+ */
 import { ref } from 'vue'
-import { databaseService } from '@renderer/services/database'
+import { databaseApi } from '@renderer/api/modules/database'
 import { useToast } from '@renderer/composables/use-toast'
 import { useImageStore } from '@renderer/stores/image'
 import logger from '@renderer/core/logger'
@@ -105,7 +109,7 @@ const processFiles = async (files: FileList | File[]) => {
   )
 
   try {
-    const result = await databaseService.importImages(payload as any)
+    const result = await databaseApi.importImages(payload as any)
     if (result.success) {
       if (result.count === 0 && result.skippedCount > 0) {
         toast.info(`所选文件已全部存在 (跳过 ${result.skippedCount} 个)`)
@@ -126,7 +130,7 @@ const handleFileChange = (e: Event) => {
   const target = e.target as HTMLInputElement
   if (target.files) {
     processFiles(target.files)
-    target.value = '' // Reset
+    target.value = '' // 重置输入框，允许重复选择同一文件
   }
 }
 

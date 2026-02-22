@@ -20,7 +20,7 @@
           <div>
             <h3 class="text-sm font-bold uppercase tracking-wider italic">正在处理的任务</h3>
             <p class="text-[10px] text-blue-100 font-bold uppercase tracking-widest mt-0.5">
-              Currently Processing Tasks
+              监控实时任务流
             </p>
           </div>
         </div>
@@ -52,11 +52,11 @@
               <div class="flex items-center gap-2">
                 <span class="text-xs font-bold font-mono tracking-wider">{{ task.sku }}</span>
                 <span class="px-1.5 py-0.5 bg-blue-400/30 rounded text-[9px] font-bold uppercase"
-                  >Processing</span
+                  >执行中</span
                 >
               </div>
               <p class="text-[10px] text-blue-100/70 mt-1 truncate max-w-[200px] italic">
-                {{ task.reason || 'No reason provided' }}
+                {{ task.reason || '暂无详细原因描述' }}
               </p>
             </div>
           </div>
@@ -76,6 +76,10 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * 活动任务展示组件
+ * 实时列出当前正在浏览器中执行的自动化投诉任务及耗时
+ */
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useComplaintStore } from '@renderer/stores/complaint'
 import dayjs from 'dayjs'

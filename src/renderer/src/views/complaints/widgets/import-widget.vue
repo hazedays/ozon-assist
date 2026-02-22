@@ -44,6 +44,10 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * 投诉任务导入组件
+ * 支持手动粘贴 SKU 列表或通过 TXT 文件批量导入并进行格式化清洗
+ */
 import { ref, watch, computed } from 'vue'
 import { useToast } from '@renderer/composables/use-toast'
 import { useComplaintStore } from '@renderer/stores/complaint'

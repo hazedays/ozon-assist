@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
-import { databaseService } from '@renderer/services/database'
-import { Stat } from '@renderer/types/stat'
+import { databaseApi } from '@renderer/api/modules/database'
+import { DatabaseStat } from '@renderer/api/types/models/database'
 import { useToast } from '@renderer/composables/use-toast'
 import logger from '@renderer/core/logger'
 
@@ -8,7 +8,7 @@ const { ipcRenderer } = window.electron || {}
 
 export const useComplaintStore = defineStore('complaint', {
   state: () => ({
-    stat: null as Stat | null,
+    stat: null as DatabaseStat | null,
     records: [] as any[],
     activeTasks: [] as any[],
     total: 0,
@@ -31,16 +31,16 @@ export const useComplaintStore = defineStore('complaint', {
 
       try {
         const [statData, listData, activeTasksData] = await Promise.all([
-          databaseService.getStat(),
-          databaseService.getComplaints({
+          databaseApi.getStat(),
+          databaseApi.getComplaints({
             page: this.currentPage,
             pageSize: this.pageSize,
             sku: this.filters.sku,
-            status: this.filters.status,
+            status: this.filters.status as any,
             startDate: this.filters.startDate,
             endDate: this.filters.endDate
           }),
-          databaseService.getComplaints({
+          databaseApi.getComplaints({
             status: 'processing',
             pageSize: 5 // 只取前 5 个最活跃的正在处理中的任务
           })
@@ -103,7 +103,7 @@ export const useComplaintStore = defineStore('complaint', {
     async importSkus(skus: string[]) {
       this.loading = true
       try {
-        const result = await databaseService.importComplaints(skus)
+        const result = await databaseApi.importComplaints(skus)
         // 导入成功后，虽然有监听到 database:updated，但我们主动跳转到第一页查看最新
         await this.resetPage()
         return result
@@ -114,7 +114,7 @@ export const useComplaintStore = defineStore('complaint', {
 
     async removeRecord(id: number) {
       try {
-        return await databaseService.deleteComplaint(id)
+        return await databaseApi.deleteComplaint(id)
       } catch (error) {
         logger.error('Delete failed:', error)
         throw error
@@ -123,7 +123,7 @@ export const useComplaintStore = defineStore('complaint', {
 
     async updateStatus(id: number, status: string) {
       try {
-        return await databaseService.updateComplaintStatus(id, status)
+        return await databaseApi.updateComplaintStatus(id, status)
       } catch (error) {
         logger.error('Update status failed:', error)
         throw error

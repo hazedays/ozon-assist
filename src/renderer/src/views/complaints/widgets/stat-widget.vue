@@ -26,6 +26,10 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * 投诉统计卡片组件
+ * 显示各种状态的投诉数量
+ */
 import { computed } from 'vue'
 import { useComplaintStore } from '@renderer/stores/complaint'
 

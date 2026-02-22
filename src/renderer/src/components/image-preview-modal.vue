@@ -7,7 +7,7 @@
       @keydown.esc="close"
       tabindex="0"
     >
-      <!-- Close Button -->
+      <!-- 关闭按钮 -->
       <button
         @click="close"
         class="absolute top-6 right-6 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-all z-110 cursor-pointer"
@@ -15,7 +15,7 @@
         <i class="ri-close-line text-2xl"></i>
       </button>
 
-      <!-- Toolbar -->
+      <!-- 工具栏 -->
       <div
         class="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-6 px-6 py-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 z-110"
       >
@@ -53,7 +53,7 @@
         </button>
       </div>
 
-      <!-- Image Container -->
+      <!-- 图片容器 -->
       <div
         class="relative w-full h-full flex items-center justify-center pointer-events-none"
         :style="containerStyle"
@@ -68,7 +68,7 @@
         />
       </div>
 
-      <!-- Loading State -->
+      <!-- 加载状态 -->
       <div v-if="loading" class="absolute inset-0 flex items-center justify-center text-white/40">
         <i class="ri-loader-4-line text-4xl animate-spin"></i>
       </div>
@@ -77,6 +77,10 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * 图片预览弹窗组件
+ * 提供缩放、旋转、拖拽等全屏预览功能
+ */
 import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
 
 const props = defineProps<{
