@@ -1,83 +1,98 @@
 /**
- * 用户认证 Store
- * 使用 Appwrite SDK 处理登录、注册、注销及会话维持
+ * 身份认证 Store
+ * 业务逻辑驱动的认证状态管理，基于 authApi 实现
  */
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { Client, Account, type Models } from 'appwrite'
+import { authApi } from '../api/modules/auth'
+import { User } from '../api/types/models/auth'
+import { LoginParams, RegisterParams } from '../api/types/params/auth'
+import logger from '@renderer/core/logger'
 
-const client = new Client()
-  .setEndpoint(import.meta.env.VITE_APPWRITE_ENDPOINT)
-  .setProject(import.meta.env.VITE_APPWRITE_PROJECT_ID)
-
-const account = new Account(client)
-
+/**
+ * 身份认证 Store (采用 kebab-case 命名，文件夹已指明其为 store)
+ */
 export const useAuthStore = defineStore('auth', () => {
-  const user = ref<Models.User<Models.Preferences> | null>(null)
+  // 当前登录状态的用户模型
+  const user = ref<User | null>(null)
+
+  // 正在进行异步操作的标志
   const isLoading = ref(false)
+
+  /** 是否已完成身份认证并拥有有效会话 */
   const isAuthenticated = computed(() => !!user.value)
 
-  // 登录
-  const login = async (email: string, password: string) => {
+  /**
+   * 提交登录认证
+   * @param params 登录邮箱及密码
+   * @returns 认证成功后的用户信息模型
+   */
+  const login = async (params: LoginParams) => {
     isLoading.value = true
     try {
-      // 创建邮箱会话
-      await account.createEmailPasswordSession(email, password)
-
-      // 获取当前用户信息
-      user.value = await account.get()
-
-      // 保存到 localStorage
+      const userData = await authApi.login(params)
+      user.value = userData
       localStorage.setItem('isAuthenticated', 'true')
-
-      return user.value
+      return userData
     } catch (error: any) {
-      console.error('Login error:', error)
-      throw new Error(error.message || '登录失败')
+      logger.error('登录认证失败:', error)
+      throw error
     } finally {
       isLoading.value = false
     }
   }
 
-  // 注册
-  const register = async (email: string, password: string, name: string) => {
+  /**
+   * 注册新账户并自动登录
+   * @param params 注册所需的账户详情
+   * @returns 注册并认证成功后的用户信息模型
+   */
+  const register = async (params: RegisterParams) => {
     isLoading.value = true
     try {
-      // 创建账户
-      await account.create('unique()', email, password, name)
-
-      // 自动登录
-      await login(email, password)
+      const userData = await authApi.register(params)
+      user.value = userData
+      localStorage.setItem('isAuthenticated', 'true')
+      return userData
     } catch (error: any) {
-      console.error('Register error:', error)
-      throw new Error(error.message || '注册失败')
+      logger.error('注册账户失败:', error)
+      throw error
     } finally {
       isLoading.value = false
     }
   }
 
-  // 登出
+  /**
+   * 注销当前会话并清理本地凭据缓存
+   */
   const logout = async () => {
     isLoading.value = true
     try {
-      await account.deleteSession('current')
+      await authApi.logout()
       user.value = null
       localStorage.removeItem('isAuthenticated')
     } catch (error: any) {
-      console.error('Logout error:', error)
-      throw new Error(error.message || '登出失败')
+      logger.error('注销会话失败:', error)
+      throw error
     } finally {
       isLoading.value = false
     }
   }
 
-  // 检查会话
+  /**
+   * 检查当前活跃的云端会话，实现持久化登录恢复
+   * @returns 是否成功恢复或维持会话
+   */
   const checkSession = async () => {
     isLoading.value = true
     try {
-      user.value = await account.get()
-      localStorage.setItem('isAuthenticated', 'true')
-      return true
+      const userData = await authApi.getCurrentUser()
+      if (userData) {
+        user.value = userData
+        localStorage.setItem('isAuthenticated', 'true')
+        return true
+      }
+      return false
     } catch {
       user.value = null
       localStorage.removeItem('isAuthenticated')
@@ -87,47 +102,33 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  // 获取用户信息
+  /**
+   * 获取并同步当前用户信息
+   * 若无法获取则清空本地认证状态
+   */
   const fetchUser = async () => {
     try {
-      user.value = await account.get()
-      return user.value
-    } catch (_error) {
-      console.error('Fetch user error:', _error)
+      const userData = await authApi.getCurrentUser()
+      user.value = userData
+      return userData
+    } catch (error: any) {
+      logger.error('获取用户信息失败:', error)
       return null
     }
   }
 
-  // 更新邮箱
-  const updateEmail = async (email: string, password: string) => {
-    try {
-      user.value = await account.updateEmail(email, password)
-      return user.value
-    } catch (error: any) {
-      console.error('Update email error:', error)
-      throw new Error(error.message || '更新邮箱失败')
-    }
-  }
-
-  // 更新密码
-  const updatePassword = async (newPassword: string, oldPassword: string) => {
-    try {
-      user.value = await account.updatePassword(newPassword, oldPassword)
-      return user.value
-    } catch (error: any) {
-      console.error('Update password error:', error)
-      throw new Error(error.message || '更新密码失败')
-    }
-  }
-
-  // 更新用户名
+  /**
+   * 修改当前用户的昵称
+   * @param name 新的昵称
+   */
   const updateName = async (name: string) => {
     try {
-      user.value = await account.updateName(name)
-      return user.value
+      const userData = await authApi.updateName(name)
+      user.value = userData
+      return userData
     } catch (error: any) {
-      console.error('Update name error:', error)
-      throw new Error(error.message || '更新用户名失败')
+      logger.error('更新昵称失败:', error)
+      throw error
     }
   }
 
@@ -140,8 +141,6 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     checkSession,
     fetchUser,
-    updateEmail,
-    updatePassword,
     updateName
   }
 })

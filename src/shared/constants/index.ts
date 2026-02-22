@@ -4,7 +4,7 @@
 
 export const APP_CONSTANTS = {
   // 应用信息
-  APP_NAME: 'OZON Auto Complaint',
+  APP_NAME: 'OzonAssist',
   APP_VERSION: '0.1.1',
 
   // 服务器配置

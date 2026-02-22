@@ -9,7 +9,7 @@ const router = createRouter({
   history: createWebHashHistory(),
   routes: [
     {
-      path: '/',
+      path: '/auth',
       component: () => import('../layouts/blank.vue'),
       children: [
         {
@@ -25,6 +25,10 @@ const router = createRouter({
           meta: { requiresAuth: false }
         }
       ]
+    },
+    {
+      path: '/',
+      redirect: '/auth/login'
     },
     // 独立层级的法律与支持路径 (用于原子级窗口渲染，不嵌套在侧边栏)
     {
