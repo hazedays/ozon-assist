@@ -32,7 +32,7 @@ export const authApi: IAuthApi = {
    */
   async login({ email, password }: LoginParams): Promise<User> {
     try {
-      await account.createEmailPasswordSession(email, password)
+      await account.createEmailPasswordSession({ email, password })
       return await account.get()
     } catch (error: any) {
       logger.error('登录异常:', error)
@@ -47,7 +47,12 @@ export const authApi: IAuthApi = {
    */
   async register({ email, password, name }: RegisterParams): Promise<User> {
     try {
-      await account.create(ID.unique(), email, password, name || email.split('@')[0])
+      await account.create({
+        userId: ID.unique(),
+        email,
+        password,
+        name: name || email.split('@')[0]
+      })
       return await this.login({ email, password })
     } catch (error: any) {
       logger.error('注册异常:', error)
@@ -72,7 +77,7 @@ export const authApi: IAuthApi = {
    */
   async logout(): Promise<void> {
     try {
-      await account.deleteSession('current')
+      await account.deleteSession({ sessionId: 'current' })
     } catch (error: any) {
       logger.error('注销异常:', error)
       throw new Error(error.message || '会话注销异常')
@@ -85,7 +90,7 @@ export const authApi: IAuthApi = {
    */
   async updateName(name: string): Promise<User> {
     try {
-      return await account.updateName(name)
+      return await account.updateName({ name })
     } catch (error: any) {
       logger.error('昵称更新异常:', error)
       throw new Error(error.message || '昵称更新失败')
@@ -98,7 +103,7 @@ export const authApi: IAuthApi = {
    */
   async updateEmail({ email, password }: UpdateEmailParams): Promise<User> {
     try {
-      return await account.updateEmail(email, password)
+      return await account.updateEmail({ email, password })
     } catch (error: any) {
       logger.error('邮箱更新异常:', error)
       throw new Error(error.message || '邮箱地址更新失败')
@@ -111,7 +116,7 @@ export const authApi: IAuthApi = {
    */
   async updatePassword({ newPassword, oldPassword }: UpdatePasswordParams): Promise<User> {
     try {
-      return await account.updatePassword(newPassword, oldPassword)
+      return await account.updatePassword({ password: newPassword, oldPassword })
     } catch (error: any) {
       logger.error('密码更新异常:', error)
       throw new Error(error.message || '认证密码更新失败')
