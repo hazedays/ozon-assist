@@ -101,8 +101,13 @@ jobs:
       - name: Zip Website
         run: zip -r website.zip website/
 
-      - name: Zip Chrome Plugin
-        run: zip -r chrome-plugin.zip chrome-plugin/
+      - name: Build and Zip Chrome Plugin
+        run: |
+          cd chrome-plugin
+          npm install
+          npm run build
+          cd ..
+          zip -r chrome-plugin.zip chrome-plugin/dist/
 
       - name: Upload Assets
         uses: actions/upload-artifact@v4

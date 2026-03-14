@@ -7,7 +7,8 @@
   "permissions": ["activeTab", "contextMenus", "scripting"],
   "host_permissions": ["https://*.ozon.ru/*", "http://127.0.0.1:8972/*"],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
   },
   "content_scripts": [
     {
