@@ -8,14 +8,14 @@ const API_BASE = 'http://127.0.0.1:8972/api'
 function createContextMenu() {
   chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({
-      id: 'ozon-submit-complaint',
-      title: '提交 Ozon 投诉',
+      id: 'ozon-start-auto-complaint',
+      title: '启动 Ozon 自动化',
       contexts: ['page'],
       documentUrlPatterns: ['https://*.ozon.ru/*']
     })
     chrome.contextMenus.create({
-      id: 'ozon-stop-complaint',
-      title: '停止自动化流程',
+      id: 'ozon-stop-auto-complaint',
+      title: '停止 Ozon 自动化',
       contexts: ['page'],
       documentUrlPatterns: ['https://*.ozon.ru/*']
     })
@@ -28,7 +28,7 @@ chrome.runtime.onStartup.addListener(createContextMenu)
 createContextMenu()
 
 // ====== 安全发送消息 ======
-async function sendOrInject(tabId, action) {
+async function sendOrInject(tabId: number, action: string) {
   if (!tabId) return
   try {
     await chrome.tabs.sendMessage(tabId, { action })
@@ -51,10 +51,10 @@ async function sendOrInject(tabId, action) {
 // ====== 右键菜单点击 ======
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (!tab || !tab.id) return
-  if (info.menuItemId === 'ozon-submit-complaint') {
-    await sendOrInject(tab.id, 'submitComplaint')
-  } else if (info.menuItemId === 'ozon-stop-complaint') {
-    await sendOrInject(tab.id, 'stopComplaint')
+  if (info.menuItemId === 'ozon-start-auto-complaint') {
+    await sendOrInject(tab.id, 'start-auto-complaint')
+  } else if (info.menuItemId === 'ozon-stop-auto-complaint') {
+    await sendOrInject(tab.id, 'stop-auto-complaint')
   }
 })
 
