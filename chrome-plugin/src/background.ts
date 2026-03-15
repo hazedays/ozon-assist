@@ -88,16 +88,28 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true
   }
 
-  if (request.action === 'fetchImage') {
-    fetch(url)
-      .then((resp) => {
-        if (!resp.ok) throw new Error(`Download failed: ${resp.status}`)
-        return resp.blob()
+  if (request.action === 'get-image') {
+    fetch(url, { method: 'GET', headers: { 'Content-Type': 'application/json' } })
+      .then((resp) => resp.json())
+      .then((json) => {
+        if (!json.success || !json.data?.url) {
+          throw new Error('Invalid API response: ' + JSON.stringify(json))
+        }
+        return fetch(json.data.url)
+      })
+      .then((imageResp) => {
+        if (!imageResp.ok) throw new Error(`Download failed: ${imageResp.status}`)
+        return imageResp.blob()
       })
       .then((blob) => {
         const reader = new FileReader()
-        reader.onloadend = () =>
-          sendResponse({ success: true, data: reader.result, type: blob.type })
+        reader.onloadend = () => {
+          sendResponse({
+            success: true,
+            data: reader.result,
+            type: blob.type
+          })
+        }
         reader.onerror = () => sendResponse({ success: false, error: 'File reading failed' })
         reader.readAsDataURL(blob)
       })

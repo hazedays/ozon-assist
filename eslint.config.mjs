@@ -5,10 +5,10 @@ import eslintPluginVue from 'eslint-plugin-vue'
 import vueParser from 'vue-eslint-parser'
 import globals from 'globals'
 
-export default defineConfig(
+export default [
   { ignores: ['**/node_modules', '**/dist', '**/out', 'resources/**'] },
-  tseslint.configs.recommended,
-  eslintPluginVue.configs['flat/recommended'],
+  ...tseslint.configs.recommended,
+  ...eslintPluginVue.configs['flat/recommended'],
   {
     languageOptions: {
       globals: {
@@ -48,12 +48,15 @@ export default defineConfig(
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/no-unused-vars': 'warn',
+      'prettier/prettier': 'off',
+      'vue/no-unused-vars': 'off',
+      indent: 'off',
+      '@typescript-eslint/indent': 'off',
       '@typescript-eslint/no-require-imports': 'off',
       '@typescript-eslint/no-empty-function': 'off',
       '@typescript-eslint/no-empty-object-type': 'off',
-      'no-undef': 'off',
-      'prettier/prettier': 'off'
+      'no-undef': 'off'
     }
   },
   eslintConfigPrettier
-)
+]
