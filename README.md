@@ -19,12 +19,16 @@ OzonAssist 专为处理 Ozon 平台上的侵权申诉而设计。它通过“本
 
 ## 🚀 核心特性
 
-- **本地优先架构**：所有图片凭证、SKU 数据和申诉历史均使用加密的 SQLite 存储于本地，拒绝强制上云，保护商业机密。
+- **本地优先架构**：所有图片凭证、SKU 数据和申诉历史均使用本地 SQLite 存储，拒绝强制上云，保护商业机密。
 - **智能化流程**：通过 Chrome MV3 插件与桌面端精密同步，实现一键自动化填充与提交投诉单，告别繁琐的复制粘贴。
 - **多平台支持**：基于 Electron 40+ 与 Vue 3 深度定制，完美支持 macOS (Apple Silicon / Intel) 与 Windows 10/11。
 - **极速同步流**：内置 30ms 写入缓冲与 IPC 实时广播系统，确保插件与客户端之间的数据刷新实时无延迟。
 - **双重提醒系统**：深度集成系统原生通知（Notification）与**强交互对话框（Dialog）**。当任务遇到障碍或全部处理完成时，即便应用在后台也能确保你收到反馈。
 - **实时耗时统计**：引入 `started_at` 时间基准，精确计算每个 SKU 的实际执行耗时，帮助优化申诉流程。
+
+## 🧭 架构与流程图
+
+- 完整架构图与流程图文档：[`docs/architecture-and-flow.md`](docs/architecture-and-flow.md)
 
 ## 📥 安装与运行
 
@@ -53,6 +57,12 @@ OzonAssist 默认在本地 `127.0.0.1:8972` 开启服务，供插件进行交互
 - `GET /api/complaint/unprocessed`: 获取下一条待处理任务（自动记录 `started_at`）。
 - `POST /api/complaint/:sku/status`: 更新任务状态（`success` / `failed`）。
 - `POST /api/complaint/:sku/image`: 关联特定维权图片。
+- `GET /api/image/random`: 随机获取一张图片供插件上传。
+- `POST /api/plugin/log`: 插件运行日志上报。
+- `GET /api/plugin/logs`: 获取插件运行日志。
+- `DELETE /api/plugin/logs`: 清空插件运行日志。
+- `GET /api/plugin/runtime-config`: 获取宿主下发的运行配置。
+- `POST /api/plugin/runtime-config`: 更新宿主运行配置。
 - `GET /api/task/failed`: 脚本执行异常上报（触发 OS 强交互弹窗）。
 
 ## 📊 任务状态说明
@@ -60,6 +70,7 @@ OzonAssist 默认在本地 `127.0.0.1:8972` 开启服务，供插件进行交互
 - **Pending**: 准备就绪，等待处理。
 - **Processing**: 执行中，UI 会显示实时动态秒表。
 - **Success**: 处理圆满完成（注：原 `resolved` 已弃用，请确认为 `success`）。
+- **Failed**: 平台返回证据不足等失败结论，任务会被标记失败。
 - **Timeout**: 超过 2 分钟未响应的任务将被系统自动标记为超时，防止队列阻塞。
 
 ## ❓ 常见问题 (FAQ)
