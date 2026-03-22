@@ -11,10 +11,118 @@ import { databaseService } from './database'
 import { getUserDataPath } from '@main/utils'
 
 class ServerService {
+  private normalizePluginLogLevel(
+    level: string | undefined
+  ): 'debug' | 'info' | 'warn' | 'error' | 'success' {
+    if (
+      level === 'debug' ||
+      level === 'info' ||
+      level === 'warn' ||
+      level === 'error' ||
+      level === 'success'
+    ) {
+      return level
+    }
+    return 'info'
+  }
+
+  private pluginLogSeq = 0
+  private readonly maxPluginLogCount = 2000
+  private pluginRuntimeLogs: Array<{
+    id: number
+    timestamp: string
+    level: 'debug' | 'info' | 'warn' | 'error' | 'success'
+    message: string
+    source?: string
+    pageUrl?: string
+    error?: string
+  }> = []
+
   private serverInstance: Server | null = null
   private activePort: number | null = null
   private statusChangeCallbacks: Array<(running: boolean) => void> = []
   private cleanupInterval: NodeJS.Timeout | null = null
+  private hostRuntimeConfig: {
+    taskIntervalMs: number
+    logLevel: 'debug' | 'info' | 'warn' | 'error' | 'silent'
+    verbose: boolean
+  } = {
+    taskIntervalMs: 500,
+    logLevel: 'info',
+    verbose: false
+  }
+
+  getHostRuntimeConfig() {
+    return { ...this.hostRuntimeConfig }
+  }
+
+  setHostRuntimeConfig(config: {
+    taskIntervalMs?: number
+    pollIntervalMs?: number
+    logLevel?: string
+    verbose?: boolean
+  }) {
+    const intervalRaw = config.taskIntervalMs ?? config.pollIntervalMs
+    if (intervalRaw !== undefined) {
+      const parsed = Number(intervalRaw)
+      if (Number.isFinite(parsed)) {
+        this.hostRuntimeConfig.taskIntervalMs = Math.min(10000, Math.max(100, Math.floor(parsed)))
+      }
+    }
+
+    if (
+      config.logLevel === 'debug' ||
+      config.logLevel === 'info' ||
+      config.logLevel === 'warn' ||
+      config.logLevel === 'error' ||
+      config.logLevel === 'silent'
+    ) {
+      this.hostRuntimeConfig.logLevel = config.logLevel
+    }
+
+    if (typeof config.verbose === 'boolean') {
+      this.hostRuntimeConfig.verbose = config.verbose
+    }
+
+    logger.info(`[Server] Host runtime config updated: ${JSON.stringify(this.hostRuntimeConfig)}`)
+    return this.getHostRuntimeConfig()
+  }
+
+  appendPluginRuntimeLog(payload: {
+    level?: string
+    message?: string
+    source?: string
+    pageUrl?: string
+    error?: string
+    timestamp?: string
+  }) {
+    const level = this.normalizePluginLogLevel(payload.level)
+
+    const item = {
+      id: ++this.pluginLogSeq,
+      timestamp: payload.timestamp || new Date().toISOString(),
+      level,
+      message: String(payload.message || ''),
+      source: payload.source,
+      pageUrl: payload.pageUrl,
+      error: payload.error
+    }
+
+    this.pluginRuntimeLogs.push(item)
+    if (this.pluginRuntimeLogs.length > this.maxPluginLogCount) {
+      this.pluginRuntimeLogs.splice(0, this.pluginRuntimeLogs.length - this.maxPluginLogCount)
+    }
+    return item
+  }
+
+  getPluginRuntimeLogs(limit = 300) {
+    const normalized = Math.min(2000, Math.max(1, Math.floor(Number(limit) || 300)))
+    return this.pluginRuntimeLogs.slice(-normalized)
+  }
+
+  clearPluginRuntimeLogs() {
+    this.pluginRuntimeLogs = []
+  }
 
   /**
    * 注册状态变化回调
@@ -163,6 +271,68 @@ class ServerService {
 
       app.get('/api/status', (_req, res) => {
         res.json({ status: 'ok', timestamp: new Date().toISOString() })
+      })
+
+      // 插件运行日志上报
+      app.post('/api/plugin/log', express.json(), (req, res) => {
+        try {
+          const item = this.appendPluginRuntimeLog(req.body || {})
+          res.json({ success: true, data: item })
+          return
+        } catch (error) {
+          logger.error('[API] Error (plugin log):', error)
+          res.status(500).json({ success: false, error: String(error) })
+          return
+        }
+      })
+
+      app.get('/api/plugin/logs', (req, res) => {
+        try {
+          const limit = Number(req.query.limit || 300)
+          res.json({ success: true, data: this.getPluginRuntimeLogs(limit) })
+          return
+        } catch (error) {
+          logger.error('[API] Error (get plugin logs):', error)
+          res.status(500).json({ success: false, error: String(error) })
+          return
+        }
+      })
+
+      app.delete('/api/plugin/logs', (_req, res) => {
+        try {
+          this.clearPluginRuntimeLogs()
+          res.json({ success: true })
+          return
+        } catch (error) {
+          logger.error('[API] Error (clear plugin logs):', error)
+          res.status(500).json({ success: false, error: String(error) })
+          return
+        }
+      })
+
+      // 获取宿主下发的运行配置（供浏览器插件拉取）
+      app.get('/api/plugin/runtime-config', (_req, res) => {
+        try {
+          res.json({ success: true, data: this.getHostRuntimeConfig() })
+          return
+        } catch (error) {
+          logger.error('[API] Error (get runtime config):', error)
+          res.status(500).json({ success: false, error: String(error) })
+          return
+        }
+      })
+
+      // 更新宿主运行配置
+      app.post('/api/plugin/runtime-config', express.json(), (req, res) => {
+        try {
+          const data = this.setHostRuntimeConfig(req.body || {})
+          res.json({ success: true, data })
+          return
+        } catch (error) {
+          logger.error('[API] Error (set runtime config):', error)
+          res.status(500).json({ success: false, error: String(error) })
+          return
+        }
       })
 
       // 上报警报/任务失败接口

@@ -2,79 +2,128 @@
   <div class="min-h-screen flex flex-col bg-slate-50 text-slate-900">
     <!-- 顶部导航 -->
     <header
-      class="h-14 border-b border-slate-200 flex items-center px-6 bg-white shrink-0 sticky top-0 z-50"
+      class="h-14 border-b border-slate-200 flex items-center px-3 md:px-6 bg-white shrink-0 sticky top-0 z-50 gap-3"
     >
-      <div class="flex items-center gap-2 mr-10 cursor-default select-none">
+      <div class="flex items-center gap-2 cursor-default select-none shrink-0">
         <img src="./assets/logo.png" alt="Logo" class="w-7 h-7 rounded-lg shadow-sm" />
-        <h1 class="text-sm font-black tracking-tighter uppercase italic text-slate-800">
+        <h1
+          class="text-sm font-black tracking-tighter uppercase italic text-slate-800 hidden sm:block"
+        >
           Ozon<span class="text-ozon">Assist</span>
         </h1>
       </div>
 
       <!-- 导航菜单 -->
-      <nav class="flex items-center gap-1">
-        <router-link
-          to="/"
-          class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 group"
-          :class="[
-            $route.name === 'complaints'
-              ? 'bg-ozon text-white shadow-sm shadow-blue-100'
-              : 'text-slate-500 hover:bg-blue-50 hover:text-ozon'
-          ]"
-        >
-          <i
-            class="ri-list-check-2 transition-transform group-hover:scale-110"
+      <div class="flex-1 min-w-0">
+        <nav class="nav-scroll flex items-center gap-1 overflow-x-auto whitespace-nowrap pr-1">
+          <router-link
+            to="/"
+            class="px-2 md:px-3 xl:px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-0.5 xl:gap-2 group whitespace-nowrap shrink-0"
             :class="[
               $route.name === 'complaints'
-                ? 'text-blue-100'
-                : 'text-slate-400 group-hover:text-ozon'
+                ? 'bg-ozon text-white shadow-sm shadow-blue-100'
+                : 'text-slate-500 hover:bg-blue-50 hover:text-ozon'
             ]"
-          ></i>
-          投诉记录
-        </router-link>
-        <router-link
-          to="/images"
-          class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 group"
-          :class="[
-            $route.name === 'images'
-              ? 'bg-ozon text-white shadow-sm shadow-blue-100'
-              : 'text-slate-500 hover:bg-blue-50 hover:text-ozon'
-          ]"
-        >
-          <i
-            class="ri-image-2-line transition-transform group-hover:scale-110"
+          >
+            <i
+              class="ri-list-check-2 transition-transform group-hover:scale-110"
+              :class="[
+                $route.name === 'complaints'
+                  ? 'text-blue-100'
+                  : 'text-slate-400 group-hover:text-ozon'
+              ]"
+            ></i>
+            <span class="hidden md:inline xl:hidden">投诉</span>
+            <span class="hidden xl:inline">投诉记录</span>
+          </router-link>
+          <router-link
+            to="/images"
+            class="px-2 md:px-3 xl:px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-0.5 xl:gap-2 group whitespace-nowrap shrink-0"
             :class="[
-              $route.name === 'images' ? 'text-blue-100' : 'text-slate-400 group-hover:text-ozon'
+              $route.name === 'images'
+                ? 'bg-ozon text-white shadow-sm shadow-blue-100'
+                : 'text-slate-500 hover:bg-blue-50 hover:text-ozon'
             ]"
-          ></i>
-          凭证库
-        </router-link>
-        <router-link
-          to="/help"
-          class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 group"
-          :class="[
-            $route.name === 'help'
-              ? 'bg-ozon text-white shadow-sm shadow-blue-100'
-              : 'text-slate-500 hover:bg-blue-50 hover:text-ozon'
-          ]"
-        >
-          <i
-            class="ri-question-line transition-transform group-hover:scale-110"
+          >
+            <i
+              class="ri-image-2-line transition-transform group-hover:scale-110"
+              :class="[
+                $route.name === 'images' ? 'text-blue-100' : 'text-slate-400 group-hover:text-ozon'
+              ]"
+            ></i>
+            <span class="hidden md:inline xl:hidden">凭证</span>
+            <span class="hidden xl:inline">凭证库</span>
+          </router-link>
+          <router-link
+            to="/help"
+            class="px-2 md:px-3 xl:px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-0.5 xl:gap-2 group whitespace-nowrap shrink-0"
             :class="[
-              $route.name === 'help' ? 'text-blue-100' : 'text-slate-400 group-hover:text-ozon'
+              $route.name === 'help'
+                ? 'bg-ozon text-white shadow-sm shadow-blue-100'
+                : 'text-slate-500 hover:bg-blue-50 hover:text-ozon'
             ]"
-          ></i>
-          使用说明
-        </router-link>
-      </nav>
+          >
+            <i
+              class="ri-question-line transition-transform group-hover:scale-110"
+              :class="[
+                $route.name === 'help' ? 'text-blue-100' : 'text-slate-400 group-hover:text-ozon'
+              ]"
+            ></i>
+            <span class="hidden md:inline xl:hidden">说明</span>
+            <span class="hidden xl:inline">使用说明</span>
+          </router-link>
+          <router-link
+            to="/settings/runtime"
+            class="px-2 md:px-3 xl:px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-0.5 xl:gap-2 group whitespace-nowrap shrink-0"
+            :class="[
+              $route.name === 'runtime-settings'
+                ? 'bg-ozon text-white shadow-sm shadow-blue-100'
+                : 'text-slate-500 hover:bg-blue-50 hover:text-ozon'
+            ]"
+          >
+            <i
+              class="ri-settings-3-line transition-transform group-hover:scale-110"
+              :class="[
+                $route.name === 'runtime-settings'
+                  ? 'text-blue-100'
+                  : 'text-slate-400 group-hover:text-ozon'
+              ]"
+            ></i>
+            <span class="hidden md:inline xl:hidden">配置</span>
+            <span class="hidden xl:inline">运行配置</span>
+          </router-link>
+          <router-link
+            to="/settings/logs"
+            class="px-2 md:px-3 xl:px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-0.5 xl:gap-2 group whitespace-nowrap shrink-0"
+            :class="[
+              $route.name === 'runtime-logs'
+                ? 'bg-ozon text-white shadow-sm shadow-blue-100'
+                : 'text-slate-500 hover:bg-blue-50 hover:text-ozon'
+            ]"
+          >
+            <i
+              class="ri-file-list-2-line transition-transform group-hover:scale-110"
+              :class="[
+                $route.name === 'runtime-logs'
+                  ? 'text-blue-100'
+                  : 'text-slate-400 group-hover:text-ozon'
+              ]"
+            ></i>
+            <span class="hidden md:inline xl:hidden">日志</span>
+            <span class="hidden xl:inline">运行日志</span>
+          </router-link>
+        </nav>
+      </div>
 
       <!-- 紧凑型统计信息 -->
       <div
         v-if="complaintStore.stat"
-        class="flex gap-4 ml-auto items-center bg-slate-50/50 px-4 py-1.5 rounded-xl border border-slate-100"
+        class="flex gap-2 lg:gap-4 items-center bg-slate-50/50 px-2 lg:px-4 py-1.5 rounded-xl border border-slate-100 shrink-0"
       >
         <div class="flex items-center gap-1.5 translate-y-[0.5px]">
-          <span class="text-[9px] font-bold text-slate-400 leading-none">任务</span>
+          <span class="hidden lg:inline text-[9px] font-bold text-slate-400 leading-none"
+            >任务</span
+          >
           <span class="text-xs font-bold tabular-nums text-slate-700 leading-none">{{
             complaintStore.stat.totalComplaints
           }}</span>
@@ -181,3 +230,13 @@ onMounted(() => {
   complaintStore.init()
 })
 </script>
+
+<style scoped>
+.nav-scroll {
+  scrollbar-width: none;
+}
+
+.nav-scroll::-webkit-scrollbar {
+  display: none;
+}
+</style>

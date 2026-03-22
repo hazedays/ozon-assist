@@ -16,6 +16,27 @@ class ServerRendererService {
       return serverService.getUrl()
     })
 
+    // 获取宿主运行配置
+    ipcMain.handle('server:getRuntimeConfig', () => {
+      return serverService.getHostRuntimeConfig()
+    })
+
+    // 更新宿主运行配置
+    ipcMain.handle('server:setRuntimeConfig', (_event, config: any) => {
+      return serverService.setHostRuntimeConfig(config || {})
+    })
+
+    // 获取插件运行日志
+    ipcMain.handle('server:getPluginLogs', (_event, limit?: number) => {
+      return serverService.getPluginRuntimeLogs(limit)
+    })
+
+    // 清空插件运行日志
+    ipcMain.handle('server:clearPluginLogs', () => {
+      serverService.clearPluginRuntimeLogs()
+      return { success: true }
+    })
+
     // 打开插件目录
     ipcMain.on('server:open-plugin-folder', () => {
       const pluginPath = getUnpackedPath('chrome-plugin')

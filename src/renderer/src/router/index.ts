@@ -17,6 +17,16 @@ const router = createRouter({
       path: '/help',
       name: 'help',
       component: () => import('../views/help/index.vue')
+    },
+    {
+      path: '/settings/runtime',
+      name: 'runtime-settings',
+      component: () => import('../views/settings/runtime.vue')
+    },
+    {
+      path: '/settings/logs',
+      name: 'runtime-logs',
+      component: () => import('../views/settings/logs.vue')
     }
   ]
 })
