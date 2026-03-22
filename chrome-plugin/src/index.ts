@@ -4,7 +4,7 @@ import { runComplaintScheduler } from './complaint/scheduler'
 import { resetComplaintDraftState } from './complaint/tick'
 import { VERBOSE_LOG_KEY } from './complaint/verbose'
 
-logger.info('=== Ozon 自动化 Content Script (TypeScript 版) 已加载 ===')
+logger.info('=== Ozon 自动化 Content Script 已加载 ===')
 logger.info(
   `详细日志开关: sessionStorage.setItem('${VERBOSE_LOG_KEY}', 'true') / removeItem('${VERBOSE_LOG_KEY}')`
 )

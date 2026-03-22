@@ -156,6 +156,8 @@ app.on('before-quit', async () => {
     logger.info('Server stopped successfully')
   } catch (error) {
     logger.error('Error stopping server:', error)
+  } finally {
+    await logger.close()
   }
 })
 
