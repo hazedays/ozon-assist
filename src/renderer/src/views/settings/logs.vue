@@ -24,15 +24,15 @@
         <p class="mt-1 text-lg font-black tabular-nums text-slate-800">{{ logs.length }}</p>
       </div>
       <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
-        <p class="text-[10px] font-bold uppercase tracking-wider text-emerald-600">Success</p>
+        <p class="text-[10px] font-bold tracking-wider text-emerald-600">成功</p>
         <p class="mt-1 text-lg font-black tabular-nums text-emerald-700">{{ successCount }}</p>
       </div>
       <div class="rounded-xl border border-amber-200 bg-amber-50 p-3">
-        <p class="text-[10px] font-bold uppercase tracking-wider text-amber-700">Warn</p>
+        <p class="text-[10px] font-bold tracking-wider text-amber-700">警告</p>
         <p class="mt-1 text-lg font-black tabular-nums text-amber-700">{{ warnCount }}</p>
       </div>
       <div class="rounded-xl border border-red-200 bg-red-50 p-3">
-        <p class="text-[10px] font-bold uppercase tracking-wider text-red-600">Error</p>
+        <p class="text-[10px] font-bold tracking-wider text-red-600">错误</p>
         <p class="mt-1 text-lg font-black tabular-nums text-red-700">{{ errorCount }}</p>
       </div>
       <div class="rounded-xl border border-slate-200 bg-slate-100 p-3">
@@ -76,11 +76,11 @@
           class="h-9 rounded-lg border border-slate-200 bg-white px-2 text-xs text-slate-700"
         >
           <option value="all">全部等级</option>
-          <option value="debug">debug</option>
-          <option value="info">info</option>
-          <option value="success">success</option>
-          <option value="warn">warn</option>
-          <option value="error">error</option>
+          <option value="debug">调试</option>
+          <option value="info">信息</option>
+          <option value="success">成功</option>
+          <option value="warn">警告</option>
+          <option value="error">错误</option>
         </select>
 
         <input
@@ -107,11 +107,7 @@
         </button>
       </div>
 
-      <div
-        ref="logsContainerRef"
-        class="mt-4 max-h-[560px] overflow-auto rounded-xl border border-slate-100 bg-slate-50"
-        @scroll="handleLogsScroll"
-      >
+      <div class="mt-4 rounded-xl border border-slate-100 bg-slate-50">
         <table class="w-full text-xs">
           <thead class="sticky top-0 bg-slate-100 text-slate-600">
             <tr>
@@ -143,10 +139,10 @@
               </td>
               <td class="px-3 py-2">
                 <span
-                  class="rounded px-2 py-0.5 text-[10px] font-bold uppercase"
+                  class="rounded px-2 py-0.5 text-[10px] font-bold"
                   :class="levelClass(item.level)"
                 >
-                  {{ item.level }}
+                  {{ levelLabel(item.level) }}
                 </span>
               </td>
               <td class="px-3 py-2 text-slate-700">
@@ -176,24 +172,23 @@ const clearing = ref(false)
 const limit = ref(300)
 const selectedLevel = ref<'all' | PluginRuntimeLog['level']>('all')
 const keyword = ref('')
-const logsContainerRef = ref<HTMLElement | null>(null)
 const autoFollowLogs = ref(true)
 let timer: ReturnType<typeof setInterval> | null = null
 
-function isNearBottom(el: HTMLElement) {
+function isPageNearBottom() {
   const threshold = 24
-  return el.scrollHeight - el.scrollTop - el.clientHeight <= threshold
+  const scrollTop = window.scrollY || document.documentElement.scrollTop || 0
+  const viewportHeight = window.innerHeight || document.documentElement.clientHeight
+  const scrollHeight = document.documentElement.scrollHeight
+  return scrollHeight - scrollTop - viewportHeight <= threshold
 }
 
 function scrollToBottom() {
-  if (logsContainerRef.value) {
-    logsContainerRef.value.scrollTop = logsContainerRef.value.scrollHeight
-  }
+  window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' })
 }
 
-function handleLogsScroll() {
-  if (!logsContainerRef.value) return
-  autoFollowLogs.value = isNearBottom(logsContainerRef.value)
+function handleWindowScroll() {
+  autoFollowLogs.value = isPageNearBottom()
 }
 
 const successCount = computed(() => logs.value.filter((i) => i.level === 'success').length)
@@ -254,11 +249,18 @@ function levelClass(level: PluginRuntimeLog['level']) {
   return 'bg-blue-100 text-blue-700'
 }
 
+function levelLabel(level: PluginRuntimeLog['level']) {
+  if (level === 'error') return '错误'
+  if (level === 'warn') return '警告'
+  if (level === 'success') return '成功'
+  if (level === 'debug') return '调试'
+  return '信息'
+}
+
 async function refreshLogs() {
   loading.value = true
   try {
-    const shouldStickToBottom =
-      autoFollowLogs.value || (logsContainerRef.value ? isNearBottom(logsContainerRef.value) : true)
+    const shouldStickToBottom = autoFollowLogs.value || isPageNearBottom()
     logs.value = await serverService.getPluginLogs(limit.value)
     await nextTick()
     if (shouldStickToBottom) {
@@ -292,6 +294,8 @@ async function clearLogs() {
 }
 
 onMounted(async () => {
+  window.addEventListener('scroll', handleWindowScroll, { passive: true })
+  autoFollowLogs.value = isPageNearBottom()
   await refreshLogs()
   timer = setInterval(() => {
     void refreshLogs()
@@ -299,6 +303,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  window.removeEventListener('scroll', handleWindowScroll)
   if (timer) clearInterval(timer)
 })
 </script>
