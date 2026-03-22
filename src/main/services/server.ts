@@ -36,6 +36,8 @@ class ServerService {
     source?: string
     pageUrl?: string
     error?: string
+    event?: string
+    data?: Record<string, unknown>
   }> = []
 
   private serverInstance: Server | null = null
@@ -95,6 +97,8 @@ class ServerService {
     pageUrl?: string
     error?: string
     timestamp?: string
+    event?: string
+    data?: Record<string, unknown>
   }) {
     const level = this.normalizePluginLogLevel(payload.level)
 
@@ -105,7 +109,9 @@ class ServerService {
       message: String(payload.message || ''),
       source: payload.source,
       pageUrl: payload.pageUrl,
-      error: payload.error
+      error: payload.error,
+      event: payload.event,
+      data: payload.data
     }
 
     this.pluginRuntimeLogs.push(item)

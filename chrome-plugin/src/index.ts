@@ -2,6 +2,7 @@ import { logger, setLogLevel } from './core/logger'
 import { setTaskIntervalMs } from './complaint/runtime-config'
 import { runComplaintScheduler } from './complaint/scheduler'
 import { resetComplaintDraftState } from './complaint/tick'
+import { resetComplaintStopStats } from './complaint/tick-state'
 import { VERBOSE_LOG_KEY } from './complaint/verbose'
 
 logger.info('=== Ozon 自动化 Content Script 已加载 ===')
@@ -22,6 +23,7 @@ chrome.runtime.onMessage.addListener((request: any) => {
   if (request.action === 'start-auto-complaint') {
     logger.info('收到启动指令 [start-auto-complaint]，重置会话状态并开始流程')
     resetComplaintDraftState()
+    resetComplaintStopStats()
     sessionStorage.setItem('ozon_auto_complaint_active', 'true')
     sessionStorage.removeItem('complaint-failed')
     sessionStorage.removeItem('ozon_auto_load')

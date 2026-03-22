@@ -1,8 +1,17 @@
 /**
- * Ozon Auto Complaint - Logger Module
+ * Chrome 插件侧日志模块。
+ *
+ * 职责：
+ * 1. 控制浏览器控制台输出级别
+ * 2. 将关键日志异步上报到宿主 Electron 服务
+ * 3. 避免日志系统反过来影响投诉主流程
  */
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'silent'
 type HostLogLevel = 'debug' | 'info' | 'warn' | 'error' | 'success'
+type HostLogExtra = {
+  event?: string
+  data?: Record<string, unknown>
+}
 
 const LOG_LEVEL_KEY = 'ozon_auto_log_level'
 
@@ -26,6 +35,7 @@ function canLog(level: LogLevel) {
   return LOG_PRIORITY[level] >= LOG_PRIORITY[getCurrentLogLevel()]
 }
 
+// 将未知错误统一转成可序列化文本，避免上报时抛出 JSON 序列化异常。
 function toErrorText(err: unknown) {
   if (!err) return undefined
   if (err instanceof Error) return `${err.name}: ${err.message}`
@@ -36,7 +46,7 @@ function toErrorText(err: unknown) {
   }
 }
 
-function reportToHost(level: HostLogLevel, message: string, err?: unknown) {
+function reportToHost(level: HostLogLevel, message: string, err?: unknown, extra?: HostLogExtra) {
   try {
     void chrome.runtime
       .sendMessage({
@@ -48,7 +58,9 @@ function reportToHost(level: HostLogLevel, message: string, err?: unknown) {
           error: toErrorText(err),
           source: 'chrome-plugin',
           pageUrl: window.location.href,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          event: extra?.event,
+          data: extra?.data
         }
       })
       .catch(() => {})
@@ -106,6 +118,15 @@ export const logger = {
       'color: #27ae60; font-weight:bold'
     )
     reportToHost('success', msg)
+  },
+  runtimeEvent: (event: string, message: string, data?: Record<string, unknown>) => {
+    if (!canLog('info')) return
+    console.log(
+      `%c[Ozon插件] 📊 [${new Date().toLocaleTimeString()}] ${message}`,
+      'color: #16a34a; font-weight:bold',
+      data || {}
+    )
+    reportToHost('info', message, undefined, { event, data })
   }
 }
 

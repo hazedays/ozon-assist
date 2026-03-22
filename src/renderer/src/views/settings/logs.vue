@@ -18,7 +18,7 @@
       </p>
     </div>
 
-    <div class="grid grid-cols-2 gap-3 md:grid-cols-5">
+    <div class="grid grid-cols-2 gap-3 md:grid-cols-7">
       <div class="rounded-xl border border-slate-200 bg-white p-3">
         <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">总条数</p>
         <p class="mt-1 text-lg font-black tabular-nums text-slate-800">{{ logs.length }}</p>
@@ -39,6 +39,23 @@
         <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">显示数量</p>
         <p class="mt-1 text-lg font-black tabular-nums text-slate-700">{{ filteredLogs.length }}</p>
       </div>
+      <div class="rounded-xl border border-teal-200 bg-teal-50 p-3">
+        <p class="text-[10px] font-bold uppercase tracking-wider text-teal-700">任务完成停止</p>
+        <p class="mt-1 text-lg font-black tabular-nums text-teal-700">{{ completedStopCount }}</p>
+      </div>
+      <div class="rounded-xl border border-orange-200 bg-orange-50 p-3">
+        <p class="text-[10px] font-bold uppercase tracking-wider text-orange-700">异常中断停止</p>
+        <p class="mt-1 text-lg font-black tabular-nums text-orange-700">
+          {{ interruptedStopCount }}
+        </p>
+      </div>
+    </div>
+
+    <div
+      class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600"
+      v-if="lastStopReason"
+    >
+      最近一次停止原因: <span class="font-bold text-slate-800">{{ lastStopReason }}</span>
     </div>
 
     <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -182,6 +199,31 @@ function handleLogsScroll() {
 const successCount = computed(() => logs.value.filter((i) => i.level === 'success').length)
 const warnCount = computed(() => logs.value.filter((i) => i.level === 'warn').length)
 const errorCount = computed(() => logs.value.filter((i) => i.level === 'error').length)
+
+const latestStopStatsLog = computed(() => {
+  for (let i = logs.value.length - 1; i >= 0; i--) {
+    const item = logs.value[i]
+    if (item.event === 'complaint.stop-stats') {
+      return item
+    }
+  }
+  return null
+})
+
+const completedStopCount = computed(() => {
+  const value = latestStopStatsLog.value?.data?.completed
+  return typeof value === 'number' ? value : 0
+})
+
+const interruptedStopCount = computed(() => {
+  const value = latestStopStatsLog.value?.data?.interrupted
+  return typeof value === 'number' ? value : 0
+})
+
+const lastStopReason = computed(() => {
+  const value = latestStopStatsLog.value?.data?.lastReason
+  return typeof value === 'string' && value ? value : ''
+})
 
 const filteredLogs = computed(() => {
   const kw = keyword.value.trim().toLowerCase()

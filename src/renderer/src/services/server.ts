@@ -14,6 +14,8 @@ export type PluginRuntimeLog = {
   source?: string
   pageUrl?: string
   error?: string
+  event?: string
+  data?: Record<string, unknown>
 }
 
 class ServerService {
