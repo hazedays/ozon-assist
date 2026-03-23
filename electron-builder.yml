@@ -51,5 +51,7 @@ appImage:
 npmRebuild: true
 asar: true
 publish:
-  provider: generic
-  url: https://example.com/auto-updates
+  provider: github
+  owner: hazedays
+  repo: ozon-assist
+  releaseType: release

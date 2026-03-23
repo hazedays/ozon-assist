@@ -5,3 +5,4 @@
 
 export { databaseService } from './database'
 export { serverService } from './server'
+export { updaterService } from './updater'

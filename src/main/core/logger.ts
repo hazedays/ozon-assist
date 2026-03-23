@@ -48,9 +48,6 @@ function getLogger(): Logger {
       file: {
         enabled: true,
         path: logDir,
-        maxSize: 10 * 1024 * 1024,
-        maxFiles: 30,
-        maxAge: 30,
         compress: true
       },
       console: {
@@ -62,7 +59,7 @@ function getLogger(): Logger {
         enabled: true,
         batchSize: 100,
         flushInterval: 1000,
-        overflowStrategy: 'drop'
+        overflowStrategy: 'block'
       },
       errorHandling: {
         silent: true,

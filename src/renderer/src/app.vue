@@ -73,27 +73,7 @@
             <span class="hidden xl:inline">使用说明</span>
           </router-link>
           <router-link
-            to="/settings/runtime"
-            class="px-2 md:px-3 xl:px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-0.5 xl:gap-2 group whitespace-nowrap shrink-0"
-            :class="[
-              $route.name === 'runtime-settings'
-                ? 'bg-ozon text-white shadow-sm shadow-blue-100'
-                : 'text-slate-500 hover:bg-blue-50 hover:text-ozon'
-            ]"
-          >
-            <i
-              class="ri-settings-3-line transition-transform group-hover:scale-110"
-              :class="[
-                $route.name === 'runtime-settings'
-                  ? 'text-blue-100'
-                  : 'text-slate-400 group-hover:text-ozon'
-              ]"
-            ></i>
-            <span class="hidden md:inline xl:hidden">配置</span>
-            <span class="hidden xl:inline">运行配置</span>
-          </router-link>
-          <router-link
-            to="/settings/logs"
+            to="/logs"
             class="px-2 md:px-3 xl:px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-0.5 xl:gap-2 group whitespace-nowrap shrink-0"
             :class="[
               $route.name === 'runtime-logs'
@@ -111,6 +91,25 @@
             ></i>
             <span class="hidden md:inline xl:hidden">日志</span>
             <span class="hidden xl:inline">运行日志</span>
+          </router-link>
+          <router-link
+            to="/settings"
+            class="px-2 md:px-3 xl:px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-0.5 xl:gap-2 group whitespace-nowrap shrink-0"
+            :class="[
+              $route.path.startsWith('/settings')
+                ? 'bg-ozon text-white shadow-sm shadow-blue-100'
+                : 'text-slate-500 hover:bg-blue-50 hover:text-ozon'
+            ]"
+          >
+            <i
+              class="ri-settings-3-line transition-transform group-hover:scale-110"
+              :class="[
+                $route.path.startsWith('/settings')
+                  ? 'text-blue-100'
+                  : 'text-slate-400 group-hover:text-ozon'
+              ]"
+            ></i>
+            <span class="hidden md:inline">设置</span>
           </router-link>
         </nav>
       </div>

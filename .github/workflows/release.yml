@@ -88,6 +88,7 @@ jobs:
             dist/*.AppImage
             dist/*.deb
             dist/*.blockmap
+            dist/latest*.yml
           if-no-files-found: error
 
   # 额外环节：打包网站和插件作为独立存档
@@ -132,7 +133,7 @@ jobs:
       - name: Flatten folder structure
         run: |
           mkdir final-assets
-          find release-artifacts -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.AppImage" -o -name "*.deb" -o -name "*.zip" \) -exec cp {} final-assets/ \;
+          find release-artifacts -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.AppImage" -o -name "*.deb" -o -name "*.zip" -o -name "*.blockmap" -o -name "latest*.yml" \) -exec cp {} final-assets/ \;
 
       - name: Create Release
         uses: softprops/action-gh-release@v2

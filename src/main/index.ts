@@ -19,9 +19,10 @@ dotenv.config()
 
 import icon from '../../resources/icon.png?asset'
 import { logger, initRendererLogging } from './core/logger'
-import { databaseService, serverService } from './services'
+import { databaseService, serverService, updaterService } from './services'
 import { databaseRendererService } from './services/renderer/database'
 import { serverRendererService } from './services/renderer/server'
+import { updaterRendererService } from './services/renderer/updater'
 import { APP_CONSTANTS } from '@shared/constants'
 
 /** 主窗口实例 */
@@ -129,6 +130,8 @@ app.whenReady().then(() => {
   databaseRendererService.initRendererDatabase()
   // 初始化服务器 IPC 服务
   serverRendererService.initRendererServer()
+  // 初始化更新 IPC 服务
+  updaterRendererService.initRendererUpdater()
   // 启动本地服务器
   serverService
     .start(APP_CONSTANTS.DEFAULT_SERVER_PORT.toString())
@@ -140,6 +143,7 @@ app.whenReady().then(() => {
     })
 
   createWindow()
+  updaterService.init(() => mainWindow)
   logger.info('App is starting...')
 })
 
@@ -151,6 +155,7 @@ app.whenReady().then(() => {
  */
 app.on('before-quit', async () => {
   logger.info('App is closing, stopping server...')
+  updaterService.dispose()
   try {
     await serverService.stop()
     logger.info('Server stopped successfully')

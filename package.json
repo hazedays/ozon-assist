@@ -28,6 +28,7 @@
     "@tailwindcss/vite": "^4.1.18",
     "better-sqlite3": "^12.6.2",
     "dayjs": "^1.11.19",
+    "electron-updater": "^6.8.3",
     "express": "^5.2.1",
     "pinia": "^3.0.4",
     "remixicon": "^4.9.1",
